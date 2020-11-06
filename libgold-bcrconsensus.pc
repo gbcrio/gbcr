@@ -1,0 +1,10 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: Gold BCR consensus library
+Description: Library for the Gold BCR consensus protocol.
+Version: 0.1.4
+Libs: -L${libdir} -lgoldbcrconsensus
+Cflags: -I${includedir}
