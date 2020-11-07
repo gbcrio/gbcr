@@ -15,7 +15,7 @@ static void AddTx(const CTransactionRef& tx, const CAmount& fee, CTxMemPool& poo
     pool.addUnchecked(CTxMemPoolEntry(tx, fee, /* time */ 0, /* height */ 1, /* spendsCoinbase */ false, /* sigOpCost */ 4, lp));
 }
 
-static void RpcMempool(benchmark::Bench& bench)
+static void RpcMempool(benchmark::State& state)
 {
     CTxMemPool pool;
     LOCK2(cs_main, pool.cs);
@@ -32,9 +32,9 @@ static void RpcMempool(benchmark::Bench& bench)
         AddTx(tx_r, /* fee */ i, pool);
     }
 
-    bench.run([&] {
+    while (state.KeepRunning()) {
         (void)MempoolToJSON(pool, /*verbose*/ true);
-    });
+    }
 }
 
-BENCHMARK(RpcMempool);
+BENCHMARK(RpcMempool, 40);

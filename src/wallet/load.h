@@ -1,4 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
+// Copyright (c) 2020 GBCR Developers
 // Copyright (c) 2009-2019 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -9,7 +10,6 @@
 #include <string>
 #include <vector>
 
-class ArgsManager;
 class CScheduler;
 
 namespace interfaces {
@@ -17,13 +17,15 @@ class Chain;
 } // namespace interfaces
 
 //! Responsible for reading and validating the -wallet arguments and verifying the wallet database.
-bool VerifyWallets(interfaces::Chain& chain);
+//! This function will perform salvage on the wallet if requested, as long as only one wallet is
+//! being loaded (WalletInit::ParameterInteraction() forbids -salvagewallet, -zapwallettxes or -upgradewallet with multiwallet).
+bool VerifyWallets(interfaces::Chain& chain, const std::vector<std::string>& wallet_files);
 
 //! Load wallet databases.
-bool LoadWallets(interfaces::Chain& chain);
+bool LoadWallets(interfaces::Chain& chain, const std::vector<std::string>& wallet_files);
 
 //! Complete startup of wallets.
-void StartWallets(CScheduler& scheduler, const ArgsManager& args);
+void StartWallets(CScheduler& scheduler);
 
 //! Flush all wallets in preparation for shutdown.
 void FlushWallets();

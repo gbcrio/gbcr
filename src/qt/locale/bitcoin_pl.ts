@@ -1035,7 +1035,7 @@
     </message>
     <message>
         <source>Unknown...</source>
-        <translation>Nieznany...</translation>
+        <translation>Nienznane...</translation>
     </message>
     <message>
         <source>Last block time</source>

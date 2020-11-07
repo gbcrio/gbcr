@@ -1,4 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
+// Copyright (c) 2020 GBCR Developers
 // Copyright (c) 2009-2020 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -12,8 +13,6 @@
 #include <util/system.h>
 
 #include <atomic>
-#include <cstdint>
-#include <limits>
 
 #ifndef WIN32
 #include <fcntl.h>
@@ -30,9 +29,9 @@
 #endif
 
 // Settings
-static Mutex g_proxyinfo_mutex;
-static proxyType proxyInfo[NET_MAX] GUARDED_BY(g_proxyinfo_mutex);
-static proxyType nameProxy GUARDED_BY(g_proxyinfo_mutex);
+static RecursiveMutex cs_proxyInfos;
+static proxyType proxyInfo[NET_MAX] GUARDED_BY(cs_proxyInfos);
+static proxyType nameProxy GUARDED_BY(cs_proxyInfos);
 int nConnectTimeout = DEFAULT_CONNECT_TIMEOUT;
 bool fNameLookup = DEFAULT_NAME_LOOKUP;
 
@@ -713,14 +712,14 @@ bool SetProxy(enum Network net, const proxyType &addrProxy) {
     assert(net >= 0 && net < NET_MAX);
     if (!addrProxy.IsValid())
         return false;
-    LOCK(g_proxyinfo_mutex);
+    LOCK(cs_proxyInfos);
     proxyInfo[net] = addrProxy;
     return true;
 }
 
 bool GetProxy(enum Network net, proxyType &proxyInfoOut) {
     assert(net >= 0 && net < NET_MAX);
-    LOCK(g_proxyinfo_mutex);
+    LOCK(cs_proxyInfos);
     if (!proxyInfo[net].IsValid())
         return false;
     proxyInfoOut = proxyInfo[net];
@@ -746,13 +745,13 @@ bool GetProxy(enum Network net, proxyType &proxyInfoOut) {
 bool SetNameProxy(const proxyType &addrProxy) {
     if (!addrProxy.IsValid())
         return false;
-    LOCK(g_proxyinfo_mutex);
+    LOCK(cs_proxyInfos);
     nameProxy = addrProxy;
     return true;
 }
 
 bool GetNameProxy(proxyType &nameProxyOut) {
-    LOCK(g_proxyinfo_mutex);
+    LOCK(cs_proxyInfos);
     if(!nameProxy.IsValid())
         return false;
     nameProxyOut = nameProxy;
@@ -760,12 +759,12 @@ bool GetNameProxy(proxyType &nameProxyOut) {
 }
 
 bool HaveNameProxy() {
-    LOCK(g_proxyinfo_mutex);
+    LOCK(cs_proxyInfos);
     return nameProxy.IsValid();
 }
 
 bool IsProxy(const CNetAddr &addr) {
-    LOCK(g_proxyinfo_mutex);
+    LOCK(cs_proxyInfos);
     for (int i = 0; i < NET_MAX; i++) {
         if (addr == static_cast<CNetAddr>(proxyInfo[i].proxy))
             return true;
@@ -800,11 +799,11 @@ bool ConnectThroughProxy(const proxyType &proxy, const std::string& strDest, int
         ProxyCredentials random_auth;
         static std::atomic_int counter(0);
         random_auth.username = random_auth.password = strprintf("%i", counter++);
-        if (!Socks5(strDest, (uint16_t)port, &random_auth, hSocket)) {
+        if (!Socks5(strDest, (unsigned short)port, &random_auth, hSocket)) {
             return false;
         }
     } else {
-        if (!Socks5(strDest, (uint16_t)port, 0, hSocket)) {
+        if (!Socks5(strDest, (unsigned short)port, 0, hSocket)) {
             return false;
         }
     }
@@ -839,8 +838,8 @@ bool LookupSubNet(const std::string& strSubnet, CSubNet& ret)
         if (slash != strSubnet.npos)
         {
             std::string strNetmask = strSubnet.substr(slash + 1);
-            uint8_t n;
-            if (ParseUInt8(strNetmask, &n)) {
+            int32_t n;
+            if (ParseInt32(strNetmask, &n)) {
                 // If valid number, assume CIDR variable-length subnet masking
                 ret = CSubNet(network, n);
                 return ret.IsValid();

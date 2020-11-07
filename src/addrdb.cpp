@@ -8,7 +8,6 @@
 #include <addrman.h>
 #include <chainparams.h>
 #include <clientversion.h>
-#include <cstdint>
 #include <hash.h>
 #include <random.h>
 #include <streams.h>
@@ -37,7 +36,7 @@ template <typename Data>
 bool SerializeFileDB(const std::string& prefix, const fs::path& path, const Data& data)
 {
     // Generate random temporary filename
-    uint16_t randv = 0;
+    unsigned short randv = 0;
     GetRandBytes((unsigned char*)&randv, sizeof(randv));
     std::string tmpfn = strprintf("%s.%04x", prefix, randv);
 

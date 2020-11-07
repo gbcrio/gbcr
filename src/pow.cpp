@@ -95,10 +95,10 @@ unsigned int CalculateNextWorkRequired(const CBlockIndex* pindexLast, int64_t nF
         if (params.fPowNoRetargeting)
             return pindexLast->nBits;
     }
-
-    // Limit adjustment step
+    
+        // Limit adjustment step
     int64_t nTargetSpacing;
-    if (pindexLast && pindexLast->nHeight < params.BPSRewardMatchHeight)
+    if (pindexLast && pindexLast->nHeight < params.BPSDiffAdjHeight)
         nTargetSpacing = STAKE_V1_TARGET_SPACING;
     else
         nTargetSpacing = params.nPowTargetSpacing;

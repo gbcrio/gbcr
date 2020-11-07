@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
+# Copyright (c) 2020 GBCR Developers
 # Copyright (c) 2018 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test the getblockfilter RPC."""
 
-from test_framework.test_framework import BitcoinTestFramework
+from test_framework.test_framework import GoldBCRTestFramework
 from test_framework.util import (
     assert_equal, assert_is_hex_string, assert_raises_rpc_error,
-    connect_nodes, disconnect_nodes
+    connect_nodes, disconnect_nodes, sync_blocks
     )
 
 FILTER_TYPES = ["basic"]
 
-class GetBlockFilterTest(BitcoinTestFramework):
+class GetBlockFilterTest(GoldBCRTestFramework):
     def set_test_params(self):
         self.setup_clean_chain = True
         self.num_nodes = 2
@@ -30,7 +31,7 @@ class GetBlockFilterTest(BitcoinTestFramework):
 
         # Reorg node 0 to a new chain
         connect_nodes(self.nodes[0], 1)
-        self.sync_blocks()
+        sync_blocks(self.nodes)
 
         assert_equal(self.nodes[0].getblockcount(), 4)
         chain1_hashes = [self.nodes[0].getblockhash(block_height) for block_height in range(4)]

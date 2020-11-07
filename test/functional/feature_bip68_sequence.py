@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Copyright (c) 2020 GBCR Developers
 # Copyright (c) 2014-2019 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -8,7 +9,7 @@ import time
 
 from test_framework.blocktools import create_block, create_coinbase, add_witness_commitment
 from test_framework.messages import COIN, COutPoint, CTransaction, CTxIn, CTxOut, FromHex, ToHex
-from test_framework.test_framework import BitcoinTestFramework
+from test_framework.test_framework import GoldBCRTestFramework
 from test_framework.util import (
     assert_equal,
     assert_greater_than,
@@ -26,14 +27,11 @@ SEQUENCE_LOCKTIME_MASK = 0x0000ffff
 # RPC error for non-BIP68 final transactions
 NOT_FINAL_ERROR = "non-BIP68-final"
 
-class BIP68Test(BitcoinTestFramework):
+class BIP68Test(GoldBCRTestFramework):
     def set_test_params(self):
         self.num_nodes = 2
         self.extra_args = [
-            [
-                "-acceptnonstdtxn=1",
-                "-peertimeout=9999",  # bump because mocktime might cause a disconnect otherwise
-            ],
+            ["-acceptnonstdtxn=1"],
             ["-acceptnonstdtxn=0"],
         ]
 
@@ -72,7 +70,7 @@ class BIP68Test(BitcoinTestFramework):
     def test_disable_flag(self):
         # Create some unconfirmed inputs
         new_addr = self.nodes[0].getnewaddress()
-        self.nodes[0].sendtoaddress(new_addr, 2) # send 2 BPS
+        self.nodes[0].sendtoaddress(new_addr, 2) # send 2 GBCR
 
         utxos = self.nodes[0].listunspent(0, 0)
         assert len(utxos) > 0
@@ -141,7 +139,7 @@ class BIP68Test(BitcoinTestFramework):
         # some of those inputs to be sequence locked (and randomly choose
         # between height/time locking). Small random chance of making the locks
         # all pass.
-        for _ in range(400):
+        for i in range(400):
             # Randomly choose up to 10 inputs
             num_inputs = random.randint(1, 10)
             random.shuffle(utxos)
@@ -260,7 +258,7 @@ class BIP68Test(BitcoinTestFramework):
         # Use prioritisetransaction to lower the effective feerate to 0
         self.nodes[0].prioritisetransaction(txid=tx2.hash, fee_delta=int(-self.relayfee*COIN))
         cur_time = int(time.time())
-        for _ in range(10):
+        for i in range(10):
             self.nodes[0].setmocktime(cur_time + 600)
             self.nodes[0].generate(1)
             cur_time += 600
@@ -327,7 +325,7 @@ class BIP68Test(BitcoinTestFramework):
             block.solve()
             tip = block.sha256
             height += 1
-            assert_equal(None if i == 1 else 'inconclusive', self.nodes[0].submitblock(ToHex(block)))
+            self.nodes[0].submitblock(ToHex(block))
             cur_time += 1
 
         mempool = self.nodes[0].getrawmempool()
@@ -384,7 +382,7 @@ class BIP68Test(BitcoinTestFramework):
         add_witness_commitment(block)
         block.solve()
 
-        assert_equal(None, self.nodes[0].submitblock(block.serialize().hex()))
+        self.nodes[0].submitblock(block.serialize().hex())
         assert_equal(self.nodes[0].getbestblockhash(), block.hash)
 
     def activateCSV(self):

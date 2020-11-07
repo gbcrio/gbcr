@@ -26,12 +26,12 @@ static void bench_sign_setup(void* arg) {
     }
 }
 
-static void bench_sign_run(void* arg, int iters) {
+static void bench_sign_run(void* arg) {
     int i;
     bench_sign *data = (bench_sign*)arg;
 
     unsigned char sig[74];
-    for (i = 0; i < iters; i++) {
+    for (i = 0; i < 20000; i++) {
         size_t siglen = 74;
         int j;
         secp256k1_ecdsa_signature signature;
@@ -47,11 +47,9 @@ static void bench_sign_run(void* arg, int iters) {
 int main(void) {
     bench_sign data;
 
-    int iters = get_iters(20000);
-
     data.ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN);
 
-    run_benchmark("ecdsa_sign", bench_sign_run, bench_sign_setup, NULL, &data, 10, iters);
+    run_benchmark("ecdsa_sign", bench_sign_run, bench_sign_setup, NULL, &data, 10, 20000);
 
     secp256k1_context_destroy(data.ctx);
     return 0;

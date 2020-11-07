@@ -19,7 +19,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this software; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-"""HTTP proxy for opening RPC connection to bitcoind.
+"""HTTP proxy for opening RPC connection to goldbcrd.
 
 AuthServiceProxy has the following improvements over python-jsonrpc's
 ServiceProxy class:
@@ -47,7 +47,7 @@ import urllib.parse
 HTTP_TIMEOUT = 30
 USER_AGENT = "AuthServiceProxy/0.1"
 
-log = logging.getLogger("BitcoinRPC")
+log = logging.getLogger("Gold BCRRPC")
 
 class JSONRPCException(Exception):
     def __init__(self, rpc_error, http_status=None):
@@ -101,28 +101,23 @@ class AuthServiceProxy():
         if os.name == 'nt':
             # Windows somehow does not like to re-use connections
             # TODO: Find out why the connection would disconnect occasionally and make it reusable on Windows
-            # Avoid "ConnectionAbortedError: [WinError 10053] An established connection was aborted by the software in your host machine"
             self._set_conn()
         try:
             self.__conn.request(method, path, postdata, headers)
             return self._get_response()
-        except (BrokenPipeError, ConnectionResetError):
-            # Python 3.5+ raises BrokenPipeError when the connection was reset
-            # ConnectionResetError happens on FreeBSD
-            self.__conn.close()
-            self.__conn.request(method, path, postdata, headers)
-            return self._get_response()
-        except OSError as e:
-            retry = (
-                '[WinError 10053] An established connection was aborted by the software in your host machine' in str(e))
-            # Workaround for a bug on macOS. See https://bugs.python.org/issue33450
-            retry = retry or ('[Errno 41] Protocol wrong type for socket' in str(e))
-            if retry:
+        except http.client.BadStatusLine as e:
+            if e.line == "''":  # if connection was closed, try again
                 self.__conn.close()
                 self.__conn.request(method, path, postdata, headers)
                 return self._get_response()
             else:
                 raise
+        except (BrokenPipeError, ConnectionResetError):
+            # Python 3.5+ raises BrokenPipeError instead of BadStatusLine when the connection was reset
+            # ConnectionResetError happens on FreeBSD with Python 3.4
+            self.__conn.close()
+            self.__conn.request(method, path, postdata, headers)
+            return self._get_response()
 
     def get_request(self, *args, **argsn):
         AuthServiceProxy.__id_count += 1

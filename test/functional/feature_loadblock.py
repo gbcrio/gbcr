@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-# Copyright (c) 2017-2020 The Bitcoin Core developers
+# Copyright (c) 2020 GBCR Developers
+# Copyright (c) 2017-2019 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test loadblock option
@@ -16,11 +17,13 @@ import sys
 import tempfile
 import urllib
 
-from test_framework.test_framework import BitcoinTestFramework
-from test_framework.util import assert_equal
+from test_framework.test_framework import (
+    GoldBCRTestFramework,
+)
+from test_framework.util import assert_equal, wait_until
 
 
-class LoadblockTest(BitcoinTestFramework):
+class LoadblockTest(GoldBCRTestFramework):
     def set_test_params(self):
         self.setup_clean_chain = True
         self.num_nodes = 2
@@ -71,8 +74,9 @@ class LoadblockTest(BitcoinTestFramework):
                        check=True)
 
         self.log.info("Restart second, unsynced node with bootstrap file")
-        self.restart_node(1, extra_args=["-loadblock=" + bootstrap_file])
-        assert_equal(self.nodes[1].getblockcount(), 100)  # start_node is blocking on all block files being imported
+        self.stop_node(1)
+        self.start_node(1, ["-loadblock=" + bootstrap_file])
+        wait_until(lambda: self.nodes[1].getblockcount() == 100)
 
         assert_equal(self.nodes[1].getblockchaininfo()['blocks'], 100)
         assert_equal(self.nodes[0].getbestblockhash(), self.nodes[1].getbestblockhash())

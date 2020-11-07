@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2020 The Bitcoin Core developers
+// Copyright (c) 2015-2019 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,6 +9,7 @@
 #include <httpserver.h>
 #include <rpc/protocol.h>
 #include <rpc/server.h>
+#include <ui_interface.h>
 #include <util/strencodings.h>
 #include <util/system.h>
 #include <util/translation.h>
@@ -150,7 +151,7 @@ static bool RPCAuthorized(const std::string& strAuth, std::string& strAuthUserna
     return multiUserAuthorized(strUserPass);
 }
 
-static bool HTTPReq_JSONRPC(const util::Ref& context, HTTPRequest* req)
+static bool HTTPReq_JSONRPC(HTTPRequest* req, const std::string &)
 {
     // JSONRPC handles only POST
     if (req->GetRequestMethod() != HTTPRequest::POST) {
@@ -165,7 +166,7 @@ static bool HTTPReq_JSONRPC(const util::Ref& context, HTTPRequest* req)
         return false;
     }
 
-    JSONRPCRequest jreq(context);
+    JSONRPCRequest jreq;
     jreq.peerAddr = req->GetPeer().ToString();
     if (!RPCAuthorized(authHeader.second, jreq.authUser)) {
         LogPrintf("ThreadRPCServer incorrect password attempt from %s\n", jreq.peerAddr);
@@ -248,8 +249,11 @@ static bool InitRPCAuthentication()
 {
     if (gArgs.GetArg("-rpcpassword", "") == "")
     {
-        LogPrintf("Using random cookie authentication.\n");
+        LogPrintf("No rpcpassword set - using random cookie authentication.\n");
         if (!GenerateAuthCookie(&strRPCUserColonPass)) {
+            uiInterface.ThreadSafeMessageBox(
+                _("Error: A fatal internal error occurred, see debug.log for details").translated, // Same message as AbortNode
+                "", CClientUIInterface::MSG_ERROR);
             return false;
         }
     } else {
@@ -284,16 +288,15 @@ static bool InitRPCAuthentication()
     return true;
 }
 
-bool StartHTTPRPC(const util::Ref& context)
+bool StartHTTPRPC()
 {
     LogPrint(BCLog::RPC, "Starting HTTP RPC server\n");
     if (!InitRPCAuthentication())
         return false;
 
-    auto handle_rpc = [&context](HTTPRequest* req, const std::string&) { return HTTPReq_JSONRPC(context, req); };
-    RegisterHTTPHandler("/", true, handle_rpc);
+    RegisterHTTPHandler("/", true, HTTPReq_JSONRPC);
     if (g_wallet_init_interface.HasWalletSupport()) {
-        RegisterHTTPHandler("/wallet/", false, handle_rpc);
+        RegisterHTTPHandler("/wallet/", false, HTTPReq_JSONRPC);
     }
     struct event_base* eventBase = EventBase();
     assert(eventBase);

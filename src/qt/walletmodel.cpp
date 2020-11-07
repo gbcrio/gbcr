@@ -1,15 +1,15 @@
-// Copyright (c) 2011-2020 The Bitcoin Core developers
+// Copyright (c) 2020 GBCR developers
+// Copyright (c) 2011-2019 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #if defined(HAVE_CONFIG_H)
-#include <config/bitcoin-config.h>
+#include <config/goldbcr-config.h>
 #endif
 
 #include <qt/walletmodel.h>
 
 #include <qt/addresstablemodel.h>
-#include <qt/clientmodel.h>
 #include <qt/guiconstants.h>
 #include <qt/guiutil.h>
 #include <qt/optionsmodel.h>
@@ -21,10 +21,8 @@
 #include <interfaces/handler.h>
 #include <interfaces/node.h>
 #include <key_io.h>
-#include <node/ui_interface.h>
-#include <psbt.h>
+#include <ui_interface.h>
 #include <util/system.h> // for GetBoolArg
-#include <util/translation.h>
 #include <wallet/coincontrol.h>
 #include <wallet/wallet.h> // for CRecipient
 
@@ -53,17 +51,12 @@ private Q_SLOTS:
 
 #include <qt/walletmodel.moc>
 
-WalletModel::WalletModel(std::unique_ptr<interfaces::Wallet> wallet, ClientModel& client_model, const PlatformStyle *platformStyle, QObject *parent) :
-    QObject(parent),
-    m_wallet(std::move(wallet)),
-    m_client_model(&client_model),
-    m_node(client_model.node()),
-    optionsModel(client_model.getOptionsModel()),
-    addressTableModel(nullptr),
+WalletModel::WalletModel(std::unique_ptr<interfaces::Wallet> wallet, interfaces::Node& node, const PlatformStyle *platformStyle, OptionsModel *_optionsModel, QObject *parent) :
+    QObject(parent), m_wallet(std::move(wallet)), m_node(node), optionsModel(_optionsModel), addressTableModel(nullptr),
     transactionTableModel(nullptr),
     recentRequestsTableModel(nullptr),
     cachedEncryptionStatus(Unencrypted),
-    timer(new QTimer(this)),
+    cachedNumBlocks(0),
     worker(nullptr),
     nWeight(0),
     updateStakeWeight(true)
@@ -90,15 +83,10 @@ WalletModel::~WalletModel()
 void WalletModel::startPollBalance()
 {
     // This timer will be fired repeatedly to update the balance
+    QTimer* timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &WalletModel::pollBalanceChanged);
     connect(timer, SIGNAL(timeout()), worker, SLOT(updateModel()));
     timer->start(MODEL_UPDATE_DELAY);
-}
-
-void WalletModel::setClientModel(ClientModel* client_model)
-{
-    m_client_model = client_model;
-    if (!m_client_model) timer->stop();
 }
 
 void WalletModel::updateStatus()
@@ -112,30 +100,26 @@ void WalletModel::updateStatus()
 
 void WalletModel::pollBalanceChanged()
 {
-    // Avoid recomputing wallet balances unless a TransactionChanged or
-    // BlockTip notification was received.
-    if (!fForceCheckBalanceChanged && m_cached_last_update_tip == getLastBlockProcessed()) return;
-
     // Try to get balances and return early if locks can't be acquired. This
     // avoids the GUI from getting stuck on periodical polls if the core is
     // holding the locks for a longer time - for example, during a wallet
     // rescan.
     interfaces::WalletBalances new_balances;
-    uint256 block_hash;
-    if (!m_wallet->tryGetBalances(new_balances, block_hash)) {
+    int numBlocks = -1;
+    if (!m_wallet->tryGetBalances(new_balances, numBlocks, fForceCheckBalanceChanged, cachedNumBlocks)) {
         return;
     }
 
     // Get node synchronization information
     bool isSyncing = false;
-    int numBlocks = -1;
     m_node.getSyncInfo(numBlocks, isSyncing);
-    bool cachedTipChanged = block_hash != m_cached_last_update_tip;
-    if (fForceCheckBalanceChanged || block_hash != m_cached_last_update_tip) {
+    bool cachedNumBlocksChanged = numBlocks != cachedNumBlocks;
+    if(fForceCheckBalanceChanged || m_node.getNumBlocks() != cachedNumBlocks)
+    {
         fForceCheckBalanceChanged = false;
 
         // Balance and number of transactions might have changed
-        m_cached_last_update_tip = block_hash;
+        cachedNumBlocks = numBlocks;
 
         bool balanceChanged = checkBalanceChanged(new_balances);
         if(transactionTableModel)
@@ -143,7 +127,7 @@ void WalletModel::pollBalanceChanged()
 
         // The stake weight is used for the staking icon status
         // Get the stake weight only when not syncing because it is time consuming
-        if(!isSyncing && (balanceChanged || cachedTipChanged))
+        if(!isSyncing && (balanceChanged || cachedNumBlocksChanged))
         {
             updateStakeWeight = true;
         }
@@ -204,7 +188,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
     {
         if (rcp.fSubtractFeeFromAmount)
             fSubtractFeeFromAmount = true;
-        {   // User-entered bitcoin address / amount:
+        {   // User-entered goldbcr address / amount:
             if(!validateAddress(rcp.address))
             {
                 return InvalidAddress;
@@ -238,10 +222,10 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
     {
         CAmount nFeeRequired = 0;
         int nChangePosRet = -1;
-        bilingual_str error;
+        std::string strFailReason;
 
         auto& newTx = transaction.getWtx();
-        newTx = m_wallet->createTransaction(vecSend, coinControl, !wallet().privateKeysDisabled() /* sign */, nChangePosRet, nFeeRequired, error);
+        newTx = m_wallet->createTransaction(vecSend, coinControl, !wallet().privateKeysDisabled() /* sign */, nChangePosRet, nFeeRequired, strFailReason);
         transaction.setTransactionFee(nFeeRequired);
         if (fSubtractFeeFromAmount && newTx)
             transaction.reassignAmounts(nChangePosRet);
@@ -252,8 +236,8 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
             {
                 return SendCoinsReturn(AmountWithFeeExceedsBalance);
             }
-            Q_EMIT message(tr("Send Coins"), QString::fromStdString(error.translated),
-                CClientUIInterface::MSG_ERROR);
+            Q_EMIT message(tr("Send Coins"), QString::fromStdString(strFailReason),
+                         CClientUIInterface::MSG_ERROR);
             return TransactionCreationFailed;
         }
 
@@ -276,7 +260,7 @@ WalletModel::SendCoinsReturn WalletModel::sendCoins(WalletModelTransaction &tran
         std::vector<std::pair<std::string, std::string>> vOrderForm;
         for (const SendCoinsRecipient &rcp : transaction.getRecipients())
         {
-            if (!rcp.message.isEmpty()) // Message from normal bitcoin:URI (bitcoin:123...?message=example)
+            if (!rcp.message.isEmpty()) // Message from normal goldbcr:URI (goldbcr:123...?message=example)
                 vOrderForm.emplace_back("Message", rcp.message.toStdString());
         }
 
@@ -356,10 +340,16 @@ WalletModel::EncryptionStatus WalletModel::getEncryptionStatus() const
 
 bool WalletModel::setWalletEncrypted(bool encrypted, const SecureString &passphrase)
 {
-    if (encrypted) {
+    if(encrypted)
+    {
+        // Encrypt
         return m_wallet->encryptWallet(passphrase);
     }
-    return false;
+    else
+    {
+        // Decrypt -- TODO; not supported yet
+        return false;
+    }
 }
 
 bool WalletModel::setWalletLocked(bool locked, const SecureString &passPhrase)
@@ -454,7 +444,7 @@ void WalletModel::subscribeToCoreSignals()
     m_handler_transaction_changed = m_wallet->handleTransactionChanged(std::bind(NotifyTransactionChanged, this, std::placeholders::_1, std::placeholders::_2));
     m_handler_show_progress = m_wallet->handleShowProgress(std::bind(ShowProgress, this, std::placeholders::_1, std::placeholders::_2));
     m_handler_watch_only_changed = m_wallet->handleWatchOnlyChanged(std::bind(NotifyWatchonlyChanged, this, std::placeholders::_1));
-    m_handler_can_get_addrs_changed = m_wallet->handleCanGetAddressesChanged(std::bind(NotifyCanGetAddressesChanged, this));
+    m_handler_can_get_addrs_changed = m_wallet->handleCanGetAddressesChanged(boost::bind(NotifyCanGetAddressesChanged, this));
 }
 
 void WalletModel::unsubscribeFromCoreSignals()
@@ -548,14 +538,14 @@ bool WalletModel::bumpFee(uint256 hash, uint256& new_hash)
 {
     CCoinControl coin_control;
     coin_control.m_signal_bip125_rbf = true;
-    std::vector<bilingual_str> errors;
+    std::vector<std::string> errors;
     CAmount old_fee;
     CAmount new_fee;
     CMutableTransaction mtx;
     if (!m_wallet->createBumpTransaction(hash, coin_control, errors, old_fee, new_fee, mtx)) {
         QMessageBox::critical(nullptr, tr("Fee bump error"), tr("Increasing transaction fee failed") + "<br />(" +
-            (errors.size() ? QString::fromStdString(errors[0].translated) : "") +")");
-        return false;
+            (errors.size() ? QString::fromStdString(errors[0]) : "") +")");
+         return false;
     }
 
     const bool create_psbt = m_wallet->privateKeysDisabled();
@@ -567,15 +557,15 @@ bool WalletModel::bumpFee(uint256 hash, uint256& new_hash)
     questionString.append("<tr><td>");
     questionString.append(tr("Current fee:"));
     questionString.append("</td><td>");
-    questionString.append(BitcoinUnits::formatHtmlWithUnit(getOptionsModel()->getDisplayUnit(), old_fee));
+    questionString.append(GoldBCRUnits::formatHtmlWithUnit(getOptionsModel()->getDisplayUnit(), old_fee));
     questionString.append("</td></tr><tr><td>");
     questionString.append(tr("Increase:"));
     questionString.append("</td><td>");
-    questionString.append(BitcoinUnits::formatHtmlWithUnit(getOptionsModel()->getDisplayUnit(), new_fee - old_fee));
+    questionString.append(GoldBCRUnits::formatHtmlWithUnit(getOptionsModel()->getDisplayUnit(), new_fee - old_fee));
     questionString.append("</td></tr><tr><td>");
     questionString.append(tr("New fee:"));
     questionString.append("</td><td>");
-    questionString.append(BitcoinUnits::formatHtmlWithUnit(getOptionsModel()->getDisplayUnit(), new_fee));
+    questionString.append(GoldBCRUnits::formatHtmlWithUnit(getOptionsModel()->getDisplayUnit(), new_fee));
     questionString.append("</td></tr></table>");
     SendConfirmationDialog confirmationDialog(tr("Confirm fee bump"), questionString);
     confirmationDialog.exec();
@@ -596,7 +586,7 @@ bool WalletModel::bumpFee(uint256 hash, uint256& new_hash)
     if (create_psbt) {
         PartiallySignedTransaction psbtx(mtx);
         bool complete = false;
-        const TransactionError err = wallet().fillPSBT(SIGHASH_ALL, false /* sign */, true /* bip32derivs */, psbtx, complete, nullptr);
+        const TransactionError err = wallet().fillPSBT(SIGHASH_ALL, false /* sign */, true /* bip32derivs */, psbtx, complete);
         if (err != TransactionError::OK || complete) {
             QMessageBox::critical(nullptr, tr("Fee bump error"), tr("Can't draft transaction."));
             return false;
@@ -617,8 +607,8 @@ bool WalletModel::bumpFee(uint256 hash, uint256& new_hash)
     // commit the bumped transaction
     if(!m_wallet->commitBumpTransaction(hash, std::move(mtx), errors, new_hash)) {
         QMessageBox::critical(nullptr, tr("Fee bump error"), tr("Could not commit transaction") + "<br />(" +
-            QString::fromStdString(errors[0].translated)+")");
-        return false;
+            QString::fromStdString(errors[0])+")");
+         return false;
     }
     return true;
 }
@@ -641,17 +631,7 @@ QString WalletModel::getDisplayName() const
 
 bool WalletModel::isMultiwallet()
 {
-    return m_node.walletClient().getWallets().size() > 1;
-}
-
-void WalletModel::refresh(bool pk_hash_only)
-{
-    addressTableModel = new AddressTableModel(this, pk_hash_only);
-}
-
-uint256 WalletModel::getLastBlockProcessed() const
-{
-    return m_client_model ? m_client_model->getBestBlockHash() : uint256{};
+    return m_node.getWallets().size() > 1;
 }
 
 uint64_t WalletModel::getStakeWeight()

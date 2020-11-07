@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2020 The Bitcoin Core developers
+# Copyright (c) 2020 GBCR Developers
+# Copyright (c) 2014-2019 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test the abandontransaction RPC.
@@ -12,16 +13,17 @@
 """
 from decimal import Decimal
 
-from test_framework.test_framework import BitcoinTestFramework
+from test_framework.test_framework import GoldBCRTestFramework
 from test_framework.util import (
     assert_equal,
     assert_raises_rpc_error,
     connect_nodes,
     disconnect_nodes,
+    wait_until,
 )
 
 
-class AbandonConflictTest(BitcoinTestFramework):
+class AbandonConflictTest(GoldBCRTestFramework):
     def set_test_params(self):
         self.num_nodes = 2
         self.extra_args = [["-minrelaytxfee=0.00001"], []]
@@ -52,13 +54,13 @@ class AbandonConflictTest(BitcoinTestFramework):
         # Disconnect nodes so node0's transactions don't get into node1's mempool
         disconnect_nodes(self.nodes[0], 1)
 
-        # Identify the 10BPS outputs
+        # Identify the 10GBCR outputs
         nA = next(tx_out["vout"] for tx_out in self.nodes[0].gettransaction(txA)["details"] if tx_out["amount"] == Decimal("10"))
         nB = next(tx_out["vout"] for tx_out in self.nodes[0].gettransaction(txB)["details"] if tx_out["amount"] == Decimal("10"))
         nC = next(tx_out["vout"] for tx_out in self.nodes[0].gettransaction(txC)["details"] if tx_out["amount"] == Decimal("10"))
 
         inputs = []
-        # spend 10BPS outputs from txA and txB
+        # spend 10GBCR outputs from txA and txB
         inputs.append({"txid": txA, "vout": nA})
         inputs.append({"txid": txB, "vout": nB})
         outputs = {}
@@ -68,7 +70,7 @@ class AbandonConflictTest(BitcoinTestFramework):
         signed = self.nodes[0].signrawtransactionwithwallet(self.nodes[0].createrawtransaction(inputs, outputs))
         txAB1 = self.nodes[0].sendrawtransaction(signed["hex"])
 
-        # Identify the 14.99998BPS output
+        # Identify the 14.99998GBCR output
         nAB = next(tx_out["vout"] for tx_out in self.nodes[0].gettransaction(txAB1)["details"] if tx_out["amount"] == Decimal("14.99998"))
 
         #Create a child tx spending AB1 and C
@@ -95,8 +97,9 @@ class AbandonConflictTest(BitcoinTestFramework):
 
         # Restart the node with a higher min relay fee so the parent tx is no longer in mempool
         # TODO: redo with eviction
-        self.restart_node(0, extra_args=["-minrelaytxfee=0.0001"])
-        assert self.nodes[0].getmempoolinfo()['loaded']
+        self.stop_node(0)
+        self.start_node(0, extra_args=["-minrelaytxfee=0.0001"])
+        wait_until(lambda: self.nodes[0].getmempoolinfo()['loaded'])
 
         # Verify txs no longer in either node's mempool
         assert_equal(len(self.nodes[0].getrawmempool()), 0)
@@ -108,8 +111,8 @@ class AbandonConflictTest(BitcoinTestFramework):
         assert_equal(newbalance, balance - signed3_change)
         # Unconfirmed received funds that are not in mempool, also shouldn't show
         # up in unconfirmed balance
-        balances = self.nodes[0].getbalances()['mine']
-        assert_equal(balances['untrusted_pending'] + balances['trusted'], newbalance)
+        unconfbalance = self.nodes[0].getunconfirmedbalance() + self.nodes[0].getbalance()
+        assert_equal(unconfbalance, newbalance)
         # Also shouldn't show up in listunspent
         assert not txABC2 in [utxo["txid"] for utxo in self.nodes[0].listunspent(0)]
         balance = newbalance
@@ -122,8 +125,9 @@ class AbandonConflictTest(BitcoinTestFramework):
         balance = newbalance
 
         # Verify that even with a low min relay fee, the tx is not reaccepted from wallet on startup once abandoned
-        self.restart_node(0, extra_args=["-minrelaytxfee=0.00001"])
-        assert self.nodes[0].getmempoolinfo()['loaded']
+        self.stop_node(0)
+        self.start_node(0, extra_args=["-minrelaytxfee=0.00001"])
+        wait_until(lambda: self.nodes[0].getmempoolinfo()['loaded'])
 
         assert_equal(len(self.nodes[0].getrawmempool()), 0)
         assert_equal(self.nodes[0].getbalance(), balance)
@@ -143,8 +147,9 @@ class AbandonConflictTest(BitcoinTestFramework):
         balance = newbalance
 
         # Remove using high relay fee again
-        self.restart_node(0, extra_args=["-minrelaytxfee=0.0001"])
-        assert self.nodes[0].getmempoolinfo()['loaded']
+        self.stop_node(0)
+        self.start_node(0, extra_args=["-minrelaytxfee=0.0001"])
+        wait_until(lambda: self.nodes[0].getmempoolinfo()['loaded'])
         assert_equal(len(self.nodes[0].getrawmempool()), 0)
         newbalance = self.nodes[0].getbalance()
         assert_equal(newbalance, balance - Decimal("24.9996"))
@@ -164,13 +169,13 @@ class AbandonConflictTest(BitcoinTestFramework):
         connect_nodes(self.nodes[0], 1)
         self.sync_blocks()
 
-        # Verify that B and C's 10 BPS outputs are available for spending again because AB1 is now conflicted
+        # Verify that B and C's 10 GBCR outputs are available for spending again because AB1 is now conflicted
         newbalance = self.nodes[0].getbalance()
         assert_equal(newbalance, balance + Decimal("20"))
         balance = newbalance
 
         # There is currently a minor bug around this and so this test doesn't work.  See Issue #7315
-        # Invalidate the block with the double spend and B's 10 BPS output should no longer be available
+        # Invalidate the block with the double spend and B's 10 GBCR output should no longer be available
         # Don't think C's should either
         self.nodes[0].invalidateblock(self.nodes[0].getbestblockhash())
         newbalance = self.nodes[0].getbalance()

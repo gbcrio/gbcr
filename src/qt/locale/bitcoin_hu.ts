@@ -3,7 +3,7 @@
     <name>AddressBookPage</name>
     <message>
         <source>Right-click to edit address or label</source>
-        <translation>A cím vagy címke szerkesztéséhez kattints a jobb gombbal</translation>
+        <translation>A cím vagy címke szerkeszteséhez kattintson a jobb gombbal</translation>
     </message>
     <message>
         <source>Create a new address</source>
@@ -482,14 +482,6 @@
         <translation>Naprakész</translation>
     </message>
     <message>
-        <source>Node window</source>
-        <translation>Csomópont ablak</translation>
-    </message>
-    <message>
-        <source>Open node debugging and diagnostic console</source>
-        <translation>Nyisd meg a hibaellenőrző és diagnosztizáló konzolt.</translation>
-    </message>
-    <message>
         <source>&amp;Sending addresses</source>
         <translation>&amp;Küldő címek</translation>
     </message>
@@ -556,10 +548,6 @@
     <message>
         <source>Error: %1</source>
         <translation>Hiba: %1</translation>
-    </message>
-    <message>
-        <source>Warning: %1</source>
-        <translation>Vigyázz: %1</translation>
     </message>
     <message>
         <source>Date: %1
@@ -818,10 +806,6 @@
         <translation>A tárcához tartozó privát kulcsok letiltása. Azok a tárcák, melyeknél a privát kulcsok le vannak tiltva, nem tartalmaznak privát kulcsokat és nem tartalmazhatnak HD magot vagy importált privát kulcsokat. Ez azoknál a tárcáknál ideális, melyeket csak megfigyelésre használnak.</translation>
     </message>
     <message>
-        <source>Disable Private Keys</source>
-        <translation>Kapcsold ki a Privát Kódot</translation>
-    </message>
-    <message>
         <source>Make a blank wallet. Blank wallets do not initially have private keys or scripts. Private keys and addresses can be imported, or an HD seed can be set, at a later time.</source>
         <translation>Üres tárca készítése. Az üres tárcák kezdetben nem tartalmaznak privát kulcsokat vagy szkripteket. Később lehetséges a privát kulcsok vagy címek importálása avagy egy HD mag beállítása.</translation>
     </message>
@@ -1040,17 +1024,9 @@
         <source>Hide</source>
         <translation>Elrejtés</translation>
     </message>
-    <message>
-        <source>Esc</source>
-        <translation>Kilépés</translation>
-    </message>
     </context>
 <context>
     <name>OpenURIDialog</name>
-    <message>
-        <source>Open bitcoin URI</source>
-        <translation>Nyisd meg a bitcoin címedet</translation>
-    </message>
     <message>
         <source>URI:</source>
         <translation>URI:</translation>
@@ -1436,10 +1412,6 @@
         <translation>URI kezelés</translation>
     </message>
     <message>
-        <source>'bitcoin://' is not a valid URI. Use 'bitcoin:' instead.</source>
-        <translation>'bitcoin://' nem érvényes egységes erőforrás azonosító (URI). Használd helyette a 'bitcoin'-t.</translation>
-    </message>
-    <message>
         <source>Due to widespread security flaws in BIP70 it's strongly recommended that any merchant instructions to switch wallets be ignored.</source>
         <translation>A BIP70 széleskörű biztonsági hiányosságai következtében határozottan ajánljuk, hogy hagyjon figyelmen kívül bármiféle kereskedelmi utasítást, amely a tárca váltására készteti.</translation>
     </message>
@@ -1605,10 +1577,6 @@
         <translation>Hiba lépett fel az URI QR kóddá alakításakor.</translation>
     </message>
     <message>
-        <source>QR code support not available.</source>
-        <translation>QR kód támogatás nem elérhető.</translation>
-    </message>
-    <message>
         <source>Save QR Code</source>
         <translation>QR Kód Mentése</translation>
     </message>
@@ -1642,10 +1610,6 @@
     <message>
         <source>Datadir</source>
         <translation>Adatkönyvtár</translation>
-    </message>
-    <message>
-        <source>Blocksdir</source>
-        <translation>Blokk könyvtár</translation>
     </message>
     <message>
         <source>Startup time</source>
@@ -1686,10 +1650,6 @@
     <message>
         <source>Wallet: </source>
         <translation>Tárca:</translation>
-    </message>
-    <message>
-        <source>(none)</source>
-        <translation>(nincs)</translation>
     </message>
     <message>
         <source>&amp;Reset</source>
@@ -1742,10 +1702,6 @@
     <message>
         <source>User Agent</source>
         <translation>User Agent</translation>
-    </message>
-    <message>
-        <source>Node window</source>
-        <translation>Csomópont ablak</translation>
     </message>
     <message>
         <source>Open the %1 debug log file from the current data directory. This can take a few seconds for large log files.</source>
@@ -2204,10 +2160,6 @@
         <translation>Por-határ:</translation>
     </message>
     <message>
-        <source>Hide transaction fee settings</source>
-        <translation>Rejtsd el a tranzakciós költségek beállításait</translation>
-    </message>
-    <message>
         <source>A too low fee might result in a never confirming transaction (read the tooltip)</source>
         <translation>A túl alacsony illeték a tranzakció soha be nem teljesülését eredményezheti (olvassa el az elemleírást)</translation>
     </message>
@@ -2306,10 +2258,6 @@
     <message>
         <source>Confirm send coins</source>
         <translation>Összeg küldésének megerősítése</translation>
-    </message>
-    <message>
-        <source>Send</source>
-        <translation>Küldés</translation>
     </message>
     <message>
         <source>The recipient address is not valid. Please recheck.</source>
@@ -2561,10 +2509,6 @@
         <translation>Tárca megnyitása megszakítva</translation>
     </message>
     <message>
-        <source>No error</source>
-        <translation>Nincs hiba</translation>
-    </message>
-    <message>
         <source>Private key for the entered address is not available.</source>
         <translation>A megadott cím privát kulcsa nem található.</translation>
     </message>
@@ -2723,16 +2667,8 @@
         <translation>Tranzakció teljes mérete</translation>
     </message>
     <message>
-        <source>Transaction virtual size</source>
-        <translation>A tranzakció virtuális mérete</translation>
-    </message>
-    <message>
         <source>Output index</source>
         <translation>Indeks izhoda</translation>
-    </message>
-    <message>
-        <source> (Certificate was not verified)</source>
-        <translation>(A tanúsítvány nem ellenőrzött)</translation>
     </message>
     <message>
         <source>Merchant</source>
@@ -3282,10 +3218,6 @@
         <translation>Helytelen vagy nemlétező genézis blokk. Helytelen hálózati adatkönyvtár?</translation>
     </message>
     <message>
-        <source>Invalid P2P permission: '%s'</source>
-        <translation>Érvénytelen P2P jog: '%s'</translation>
-    </message>
-    <message>
         <source>Invalid amount for -%s=&lt;amount&gt;: '%s'</source>
         <translation>Neveljavna količina za -%s=&lt;amount&gt;: '%s'</translation>
     </message>
@@ -3298,16 +3230,8 @@
         <translation>Neveljavna količina za -fallbackfee=&lt;amount&gt;: '%s'</translation>
     </message>
     <message>
-        <source>Unknown address type '%s'</source>
-        <translation>Ismeretlen cím típus '%s'</translation>
-    </message>
-    <message>
         <source>Loading P2P addresses...</source>
         <translation>P2P címek betöltése...</translation>
-    </message>
-    <message>
-        <source>Error: Disk space is too low!</source>
-        <translation>Hiba: A lemezen kevés hely elérhető!</translation>
     </message>
     <message>
         <source>Loading banlist...</source>

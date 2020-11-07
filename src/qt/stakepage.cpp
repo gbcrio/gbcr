@@ -1,3 +1,4 @@
+// Copyright (c) 2011-2018 The GoldBCR Core developers
 // Copyright (c) 2011-2018 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -5,7 +6,7 @@
 #include <qt/stakepage.h>
 #include <qt/forms/ui_stakepage.h>
 
-#include <qt/bitcoinunits.h>
+#include <qt/goldbcrunits.h>
 #include <qt/clientmodel.h>
 #include <qt/guiconstants.h>
 #include <qt/guiutil.h>
@@ -82,7 +83,7 @@ void StakePage::setWalletModel(WalletModel *model)
         connect(model->getOptionsModel(), &OptionsModel::displayUnitChanged, this, &StakePage::updateDisplayUnit);
     }
 
-    // update the display unit, to not use the default ("BPS")
+    // update the display unit, to not use the default ("GBCR")
     updateDisplayUnit();
 }
 
@@ -90,10 +91,10 @@ void StakePage::setBalance(const interfaces::WalletBalances& balances)
 {
     int unit = walletModel->getOptionsModel()->getDisplayUnit();
     m_balances = balances;
-    ui->labelAssets->setText(BitcoinUnits::formatWithUnit(unit, balances.stakeable, false, BitcoinUnits::SeparatorStyle::ALWAYS));
-    ui->labelAssetsImmature->setText(BitcoinUnits::formatWithUnit(unit, balances.immature_stakeable, false, BitcoinUnits::SeparatorStyle::ALWAYS));
+    ui->labelAssets->setText(GoldBCRUnits::formatWithUnit(unit, balances.stakeable, false, GoldBCRUnits::separatorAlways));
+    ui->labelAssetsImmature->setText(GoldBCRUnits::formatWithUnit(unit, balances.immature_stakeable, false, GoldBCRUnits::separatorAlways));
     ui->labelAssetsImmature->setVisible(balances.immature_stakeable != 0);
-    ui->labelStake->setText(BitcoinUnits::formatWithUnit(unit, balances.stake, false, BitcoinUnits::SeparatorStyle::ALWAYS));
+    ui->labelStake->setText(GoldBCRUnits::formatWithUnit(unit, balances.stake, false, GoldBCRUnits::separatorAlways));
 }
 
 void StakePage::on_checkStake_clicked(bool checked)
@@ -122,7 +123,7 @@ void StakePage::numBlocksChanged(int count, const QDateTime &, double, bool head
 {
     if(!headers && clientModel && walletModel)
     {
-        ui->labelHeight->setText(BitcoinUnits::formatInt(count));
+        ui->labelHeight->setText(GoldBCRUnits::formatInt(count));
         m_subsidy = clientModel->node().getBlockSubsidy(count);
         m_networkWeight = clientModel->node().getNetworkStakeWeight();
         m_expectedAnnualROI = clientModel->node().getEstimatedAnnualROI();
@@ -135,13 +136,13 @@ void StakePage::numBlocksChanged(int count, const QDateTime &, double, bool head
 void StakePage::updateSubsidy()
 {
     int unit = walletModel->getOptionsModel()->getDisplayUnit();
-    QString strSubsidy = BitcoinUnits::formatWithUnit(unit, m_subsidy, false, BitcoinUnits::SeparatorStyle::ALWAYS) + "/Block";
+    QString strSubsidy = GoldBCRUnits::formatWithUnit(unit, m_subsidy, false, GoldBCRUnits::separatorAlways) + "/Block";
     ui->labelReward->setText(strSubsidy);
 }
 
 void StakePage::updateNetworkWeight()
 {
-    ui->labelWeight->setText(BitcoinUnits::formatInt(m_networkWeight / COIN));
+    ui->labelWeight->setText(GoldBCRUnits::formatInt(m_networkWeight / COIN));
 }
 
 void StakePage::updateAnnualROI()

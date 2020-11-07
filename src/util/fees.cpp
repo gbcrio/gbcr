@@ -6,16 +6,11 @@
 #include <util/fees.h>
 
 #include <policy/fees.h>
-#include <util/strencodings.h>
-#include <util/string.h>
 
 #include <map>
 #include <string>
-#include <vector>
-#include <utility>
 
-std::string StringForFeeReason(FeeReason reason)
-{
+std::string StringForFeeReason(FeeReason reason) {
     static const std::map<FeeReason, std::string> fee_reason_strings = {
         {FeeReason::NONE, "None"},
         {FeeReason::HALF_ESTIMATE, "Half Target 60% Threshold"},
@@ -34,31 +29,16 @@ std::string StringForFeeReason(FeeReason reason)
     return reason_string->second;
 }
 
-const std::vector<std::pair<std::string, FeeEstimateMode>>& FeeModeMap()
-{
-    static const std::vector<std::pair<std::string, FeeEstimateMode>> FEE_MODES = {
-        {"unset", FeeEstimateMode::UNSET},
-        {"economical", FeeEstimateMode::ECONOMICAL},
-        {"conservative", FeeEstimateMode::CONSERVATIVE},
-        {(CURRENCY_UNIT + "/kB"), FeeEstimateMode::BTC_KB},
-        {(CURRENCY_ATOM + "/B"), FeeEstimateMode::SAT_B},
+bool FeeModeFromString(const std::string& mode_string, FeeEstimateMode& fee_estimate_mode) {
+    static const std::map<std::string, FeeEstimateMode> fee_modes = {
+        {"UNSET", FeeEstimateMode::UNSET},
+        {"ECONOMICAL", FeeEstimateMode::ECONOMICAL},
+        {"CONSERVATIVE", FeeEstimateMode::CONSERVATIVE},
     };
-    return FEE_MODES;
-}
+    auto mode = fee_modes.find(mode_string);
 
-std::string FeeModes(const std::string& delimiter)
-{
-    return Join(FeeModeMap(), delimiter, [&](const std::pair<std::string, FeeEstimateMode>& i) { return i.first; });
-}
+    if (mode == fee_modes.end()) return false;
 
-bool FeeModeFromString(const std::string& mode_string, FeeEstimateMode& fee_estimate_mode)
-{
-    auto searchkey = ToUpper(mode_string);
-    for (const auto& pair : FeeModeMap()) {
-        if (ToUpper(pair.first) == searchkey) {
-            fee_estimate_mode = pair.second;
-            return true;
-        }
-    }
-    return false;
+    fee_estimate_mode = mode->second;
+    return true;
 }

@@ -14,16 +14,8 @@
 
 #include <vector>
 
-static void AssembleBlock(benchmark::Bench& bench)
+static void AssembleBlock(benchmark::State& state)
 {
-    TestingSetup test_setup{
-        CBaseChainParams::REGTEST,
-        /* extra_args */ {
-            "-nodebuglogfile",
-            "-nodebug",
-        },
-    };
-
     const std::vector<unsigned char> op_true{OP_TRUE};
     CScriptWitness witness;
     witness.stack.push_back(op_true);
@@ -38,7 +30,7 @@ static void AssembleBlock(benchmark::Bench& bench)
     std::array<CTransactionRef, NUM_BLOCKS - COINBASE_MATURITY + 1> txs;
     for (size_t b{0}; b < NUM_BLOCKS; ++b) {
         CMutableTransaction tx;
-        tx.vin.push_back(MineBlock(test_setup.m_node, SCRIPT_PUB));
+        tx.vin.push_back(MineBlock(g_testing_setup->m_node, SCRIPT_PUB));
         tx.vin.back().scriptWitness = witness;
         tx.vout.emplace_back(1337, SCRIPT_PUB);
         if (NUM_BLOCKS - b >= COINBASE_MATURITY)
@@ -49,14 +41,14 @@ static void AssembleBlock(benchmark::Bench& bench)
 
         for (const auto& txr : txs) {
             TxValidationState state;
-            bool ret{::AcceptToMemoryPool(*test_setup.m_node.mempool, state, txr, nullptr /* plTxnReplaced */, false /* bypass_limits */)};
+            bool ret{::AcceptToMemoryPool(::mempool, state, txr, nullptr /* plTxnReplaced */, false /* bypass_limits */, /* nAbsurdFee */ 0)};
             assert(ret);
         }
     }
 
-    bench.run([&] {
-        PrepareBlock(test_setup.m_node, SCRIPT_PUB);
-    });
+    while (state.KeepRunning()) {
+        PrepareBlock(g_testing_setup->m_node, SCRIPT_PUB);
+    }
 }
 
-BENCHMARK(AssembleBlock);
+BENCHMARK(AssembleBlock, 700);

@@ -1,4 +1,5 @@
-// Copyright (c) 2011-2020 The Bitcoin Core developers
+// Copyright (c) 2020 GBCR Developers
+// Copyright (c) 2011-2019 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -6,7 +7,7 @@
 #define BITCOIN_QT_WALLETMODEL_H
 
 #if defined(HAVE_CONFIG_H)
-#include <config/bitcoin-config.h>
+#include <config/goldbcr-config.h>
 #endif
 
 #include <key.h>
@@ -26,7 +27,6 @@
 enum class OutputType;
 
 class AddressTableModel;
-class ClientModel;
 class OptionsModel;
 class PlatformStyle;
 class RecentRequestsTableModel;
@@ -56,7 +56,7 @@ class WalletModel : public QObject
     Q_OBJECT
 
 public:
-    explicit WalletModel(std::unique_ptr<interfaces::Wallet> wallet, ClientModel& client_model, const PlatformStyle *platformStyle, QObject *parent = nullptr);
+    explicit WalletModel(std::unique_ptr<interfaces::Wallet> wallet, interfaces::Node& node, const PlatformStyle *platformStyle, OptionsModel *optionsModel, QObject *parent = nullptr);
     ~WalletModel();
 
     enum StatusCode // Returned by sendCoins
@@ -150,8 +150,6 @@ public:
 
     interfaces::Node& node() const { return m_node; }
     interfaces::Wallet& wallet() const { return *m_wallet; }
-    ClientModel& clientModel() const { return *m_client_model; }
-    void setClientModel(ClientModel* client_model);
 
     QString getWalletName() const;
     QString getDisplayName() const;
@@ -161,11 +159,6 @@ public:
     uint64_t getStakeWeight();
 
     AddressTableModel* getAddressTableModel() const { return addressTableModel; }
-
-    void refresh(bool pk_hash_only = false);
-
-    uint256 getLastBlockProcessed() const;
-
 private:
     std::unique_ptr<interfaces::Wallet> m_wallet;
     std::unique_ptr<interfaces::Handler> m_handler_unload;
@@ -175,7 +168,6 @@ private:
     std::unique_ptr<interfaces::Handler> m_handler_show_progress;
     std::unique_ptr<interfaces::Handler> m_handler_watch_only_changed;
     std::unique_ptr<interfaces::Handler> m_handler_can_get_addrs_changed;
-    ClientModel* m_client_model;
     interfaces::Node& m_node;
 
     bool fHaveWatchOnly;
@@ -192,16 +184,13 @@ private:
     // Cache some values to be able to detect changes
     interfaces::WalletBalances m_cached_balances;
     EncryptionStatus cachedEncryptionStatus;
-    QTimer* timer;
+    int cachedNumBlocks;
 
     QThread t;
     WalletWorker *worker;
 
     uint64_t nWeight;
     std::atomic<bool> updateStakeWeight;
-    
-    // Block hash denoting when the last balance update was done.
-    uint256 m_cached_last_update_tip{};
 
     void subscribeToCoreSignals();
     void unsubscribeFromCoreSignals();

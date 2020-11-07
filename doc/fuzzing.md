@@ -1,16 +1,16 @@
-# Fuzzing Bitcoin Core using libFuzzer
+# Fuzzing Gold BCR Core using libFuzzer
 
 ## Quickstart guide
 
-To quickly get started fuzzing Bitcoin Core using [libFuzzer](https://llvm.org/docs/LibFuzzer.html):
+To quickly get started fuzzing Gold BCR Core using [libFuzzer](https://llvm.org/docs/LibFuzzer.html):
 
 ```sh
-$ git clone https://github.com/bitcoin/bitcoin
-$ cd bitcoin/
+$ git clone https://github.com/goldbcr/goldbcr
+$ cd goldbcr/
 $ ./autogen.sh
 $ CC=clang CXX=clang++ ./configure --enable-fuzz --with-sanitizers=address,fuzzer,undefined
 # macOS users: If you have problem with this step then make sure to read "macOS hints for
-# libFuzzer" on https://github.com/bitcoin/bitcoin/blob/master/doc/fuzzing.md#macos-hints-for-libfuzzer
+# libFuzzer" on https://github.com/goldbcr/goldbcr/blob/master/doc/fuzzing.md#macos-hints-for-libfuzzer
 $ make
 $ src/test/fuzz/process_message
 # abort fuzzing using ctrl-c
@@ -64,9 +64,9 @@ block^@M-^?M-^?M-^?M-^?M-^?nM-^?M-^?
 
 In this case the fuzzer managed to create a `block` message which when passed to `ProcessMessage(...)` increased coverage.
 
-The project's collection of seed corpora is found in the [`bitcoin-core/qa-assets`](https://github.com/bitcoin-core/qa-assets) repo.
+The project's collection of seed corpora is found in the [`goldbcr-core/qa-assets`](https://github.com/goldbcr-core/qa-assets) repo.
 
-To fuzz `process_message` using the [`bitcoin-core/qa-assets`](https://github.com/bitcoin-core/qa-assets) seed corpus:
+To fuzz `process_message` using the [`goldbcr-core/qa-assets`](https://github.com/goldbcr-core/qa-assets) seed corpus:
 
 ```sh
 $ git clone https://github.com/bitcoin-core/qa-assets
@@ -81,9 +81,9 @@ INFO: seed corpus: files: 991 min: 1b max: 1858b total: 288291b rss: 150Mb
 …
 ```
 
-If you find coverage increasing inputs when fuzzing you are highly encouraged to submit them for inclusion in the [`bitcoin-core/qa-assets`](https://github.com/bitcoin-core/qa-assets) repo.
+If you find coverage increasing inputs when fuzzing you are highly encouraged to submit them for inclusion in the [`goldbcr-core/qa-assets`](https://github.com/goldbcr-core/qa-assets) repo.
 
-Every single pull request submitted against the Bitcoin Core repo is automatically tested against all inputs in the [`bitcoin-core/qa-assets`](https://github.com/bitcoin-core/qa-assets) repo. Contributing new coverage increasing inputs is an easy way to help make Bitcoin Core more robust.
+Every single pull request submitted against GBCR repo is automatically tested against all inputs in the [`goldbcr-core/qa-assets`](https://github.com/goldbcr-core/qa-assets) repo. Contributing new coverage increasing inputs is an easy way to help make Gold BCR Core more robust.
 
 ## macOS hints for libFuzzer
 
@@ -108,21 +108,19 @@ Full configure that was tested on macOS Catalina with `brew` installed `llvm`:
 
 Read the [libFuzzer documentation](https://llvm.org/docs/LibFuzzer.html) for more information. This [libFuzzer tutorial](https://github.com/google/fuzzing/blob/master/tutorial/libFuzzerTutorial.md) might also be of interest.
 
-# Fuzzing Bitcoin Core using american fuzzy lop (`afl-fuzz`)
+# Fuzzing Gold BCR Core using american fuzzy lop (`afl-fuzz`)
 
 ## Quickstart guide
 
-To quickly get started fuzzing Bitcoin Core using [`afl-fuzz`](https://github.com/google/afl):
+To quickly get started fuzzing Gold BCR Core using [`afl-fuzz`](https://github.com/google/afl):
 
 ```sh
-$ git clone https://github.com/bitcoin/bitcoin
-$ cd bitcoin/
+$ git clone https://github.com/gbcrio/gbcr
+$ cd goldbcr/
 $ git clone https://github.com/google/afl
 $ make -C afl/
 $ make -C afl/llvm_mode/
 $ ./autogen.sh
-# It is possible to compile with afl-gcc and afl-g++ instead of afl-clang. However, running afl-fuzz
-# may require more memory via the -m flag.
 $ CC=$(pwd)/afl/afl-clang-fast CXX=$(pwd)/afl/afl-clang-fast++ ./configure --enable-fuzz
 $ make
 # For macOS you may need to ignore x86 compilation checks when running "make". If so,
@@ -135,25 +133,3 @@ $ afl/afl-fuzz -i inputs/ -o outputs/ -- src/test/fuzz/bech32
 ```
 
 Read the [`afl-fuzz` documentation](https://github.com/google/afl) for more information.
-
-# Fuzzing Bitcoin Core using Honggfuzz
-
-## Quickstart guide
-
-To quickly get started fuzzing Bitcoin Core using [Honggfuzz](https://github.com/google/honggfuzz):
-
-```sh
-$ git clone https://github.com/bitcoin/bitcoin
-$ cd bitcoin/
-$ ./autogen.sh
-$ git clone https://github.com/google/honggfuzz
-$ cd honggfuzz/
-$ make
-$ cd ..
-$ CC=$(pwd)/honggfuzz/hfuzz_cc/hfuzz-clang CXX=$(pwd)/honggfuzz/hfuzz_cc/hfuzz-clang++ ./configure --enable-fuzz --with-sanitizers=address,undefined
-$ make
-$ mkdir -p inputs/
-$ honggfuzz/honggfuzz -i inputs/ -- src/test/fuzz/process_message
-```
-
-Read the [Honggfuzz documentation](https://github.com/google/honggfuzz/blob/master/docs/USAGE.md) for more information.

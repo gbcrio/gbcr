@@ -1,13 +1,14 @@
+// Copyright (c) 2020 GBCR Developers
 // Copyright (c) 2009-2019 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #if defined(HAVE_CONFIG_H)
-#include <config/bitcoin-config.h>
+#include <config/goldbcr-config.h>
 #endif
 
 #include <interfaces/node.h>
-#include <qt/bitcoin.h>
+#include <qt/goldbcr.h>
 #include <qt/test/apptests.h>
 #include <qt/test/rpcnestedtests.h>
 #include <qt/test/uritests.h>
@@ -40,7 +41,7 @@ Q_IMPORT_PLUGIN(QCocoaIntegrationPlugin);
 const std::function<void(const std::string&)> G_TEST_LOG_FUN{};
 
 // This is all you need to run all the tests
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     // Initialize persistent globals with the testing setup state for sanity.
     // E.g. -datadir in gArgs is set to a temp directory dummy value (instead
@@ -52,8 +53,7 @@ int main(int argc, char* argv[])
         BasicTestingSetup dummy{CBaseChainParams::REGTEST};
     }
 
-    NodeContext node_context;
-    std::unique_ptr<interfaces::Node> node = interfaces::MakeNode(&node_context);
+    std::unique_ptr<interfaces::Node> node = interfaces::MakeNode();
 
     bool fInvalid = false;
 
@@ -68,11 +68,9 @@ int main(int argc, char* argv[])
 
     // Don't remove this, it's needed to access
     // QApplication:: and QCoreApplication:: in the tests
-    BitcoinApplication app;
-    app.setNode(*node);
-    app.setApplicationName("Bitcoin-Qt-test");
+    Gold BCRApplication app(*node);
+    app.setApplicationName("Gold BCR-Qt-test");
 
-    app.node().context()->args = &gArgs;     // Make gArgs available in the NodeContext
     AppTests app_tests(app);
     if (QTest::qExec(&app_tests) != 0) {
         fInvalid = true;
@@ -81,7 +79,7 @@ int main(int argc, char* argv[])
     if (QTest::qExec(&test1) != 0) {
         fInvalid = true;
     }
-    RPCNestedTests test3(app.node());
+    RPCNestedTests test3(*node);
     if (QTest::qExec(&test3) != 0) {
         fInvalid = true;
     }
@@ -90,11 +88,11 @@ int main(int argc, char* argv[])
         fInvalid = true;
     }
 #ifdef ENABLE_WALLET
-    WalletTests test5(app.node());
+    WalletTests test5(*node);
     if (QTest::qExec(&test5) != 0) {
         fInvalid = true;
     }
-    AddressBookTests test6(app.node());
+    AddressBookTests test6(*node);
     if (QTest::qExec(&test6) != 0) {
         fInvalid = true;
     }

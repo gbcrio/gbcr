@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 The Bitcoin Core developers
+// Copyright (c) 2012-2019 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -6,17 +6,15 @@
 #include <scheduler.h>
 #include <util/time.h>
 
+#include <boost/thread.hpp>
 #include <boost/test/unit_test.hpp>
-#include <boost/thread/thread.hpp>
-
-#include <mutex>
 
 BOOST_AUTO_TEST_SUITE(scheduler_tests)
 
-static void microTask(CScheduler& s, std::mutex& mutex, int& counter, int delta, std::chrono::system_clock::time_point rescheduleTime)
+static void microTask(CScheduler& s, boost::mutex& mutex, int& counter, int delta, std::chrono::system_clock::time_point rescheduleTime)
 {
     {
-        std::lock_guard<std::mutex> lock(mutex);
+        boost::unique_lock<boost::mutex> lock(mutex);
         counter += delta;
     }
     std::chrono::system_clock::time_point noTime = std::chrono::system_clock::time_point::min();
@@ -40,7 +38,7 @@ BOOST_AUTO_TEST_CASE(manythreads)
     // counters should sum to the number of initial tasks performed.
     CScheduler microTasks;
 
-    std::mutex counterMutex[10];
+    boost::mutex counterMutex[10];
     int counter[10] = { 0 };
     FastRandomContext rng{/* fDeterministic */ true};
     auto zeroToNine = [](FastRandomContext& rc) -> int { return rc.randrange(10); }; // [0, 9]
@@ -89,7 +87,7 @@ BOOST_AUTO_TEST_CASE(manythreads)
     }
 
     // Drain the task queue then exit threads
-    microTasks.StopWhenDrained();
+    microTasks.stop(true);
     microThreads.join_all(); // ... wait until all the threads are done
 
     int counterSum = 0;
@@ -155,7 +153,7 @@ BOOST_AUTO_TEST_CASE(singlethreadedscheduler_ordered)
     }
 
     // finish up
-    scheduler.StopWhenDrained();
+    scheduler.stop(true);
     threads.join_all();
 
     BOOST_CHECK_EQUAL(counter1, 100);
@@ -186,7 +184,7 @@ BOOST_AUTO_TEST_CASE(mockforward)
     scheduler.MockForward(std::chrono::minutes{5});
 
     // ensure scheduler has chance to process all tasks queued for before 1 ms from now.
-    scheduler.scheduleFromNow([&scheduler] { scheduler.stop(); }, std::chrono::milliseconds{1});
+    scheduler.scheduleFromNow([&scheduler] { scheduler.stop(false); }, std::chrono::milliseconds{1});
     scheduler_thread.join();
 
     // check that the queue only has one job remaining

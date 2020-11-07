@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>798</width>
-    <height>318</height>
+    <width>596</width>
+    <height>342</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -73,13 +73,13 @@
                </size>
               </property>
               <property name="toolTip">
-               <string>The displayed information may be out of date. Your wallet automatically synchronizes with the Bitcoin network after a connection is established, but this process has not completed yet.</string>
+               <string>The displayed information may be out of date. Your wallet automatically synchronizes with the Gold BCR network after a connection is established, but this process has not completed yet.</string>
               </property>
               <property name="text">
                <string/>
               </property>
               <property name="icon">
-               <iconset resource="../bitcoin.qrc">
+               <iconset resource="../goldbcr.qrc">
                 <normaloff>:/icons/warning</normaloff>
                 <disabledoff>:/icons/warning</disabledoff>:/icons/warning</iconset>
               </property>
@@ -118,7 +118,6 @@
              <widget class="QLabel" name="labelWatchPending">
               <property name="font">
                <font>
-                <family>Monospace</family>
                 <weight>75</weight>
                 <bold>true</bold>
                </font>
@@ -130,7 +129,7 @@
                <string>Unconfirmed transactions to watch-only addresses</string>
               </property>
               <property name="text">
-               <string notr="true">0.00000000 BPS</string>
+               <string notr="true">0.000 000 00 GBCR</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -144,7 +143,6 @@
              <widget class="QLabel" name="labelUnconfirmed">
               <property name="font">
                <font>
-                <family>Monospace</family>
                 <weight>75</weight>
                 <bold>true</bold>
                </font>
@@ -156,7 +154,7 @@
                <string>Total of transactions that have yet to be confirmed, and do not yet count toward the spendable balance</string>
               </property>
               <property name="text">
-               <string notr="true">0.00000000 BPS</string>
+               <string notr="true">0.000 000 00 GBCR</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -170,7 +168,6 @@
              <widget class="QLabel" name="labelWatchImmature">
               <property name="font">
                <font>
-                <family>Monospace</family>
                 <weight>75</weight>
                 <bold>true</bold>
                </font>
@@ -182,7 +179,7 @@
                <string>Mined balance in watch-only addresses that has not yet matured</string>
               </property>
               <property name="text">
-               <string notr="true">0.00000000 BPS</string>
+               <string notr="true">0.000 000 00 GBCR</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -229,7 +226,6 @@
              <widget class="QLabel" name="labelImmature">
               <property name="font">
                <font>
-                <family>Monospace</family>
                 <weight>75</weight>
                 <bold>true</bold>
                </font>
@@ -241,7 +237,7 @@
                <string>Mined balance that has not yet matured</string>
               </property>
               <property name="text">
-               <string notr="true">0.00000000 BPS</string>
+               <string notr="true">0.000 000 00 GBCR</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -286,7 +282,7 @@
                <string>Stake</string>
               </property>
               <property name="text">
-               <string notr="true">0.00000000 BPS</string>
+               <string notr="true">0.000 000 00 GBCR</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -331,7 +327,7 @@
                <string>Watch Stake</string>
               </property>
               <property name="text">
-               <string notr="true">0.00000000 BPS</string>
+               <string notr="true">0.000 000 00 GBCR</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -345,7 +341,6 @@
              <widget class="QLabel" name="labelTotal">
               <property name="font">
                <font>
-                <family>Monospace</family>
                 <weight>75</weight>
                 <bold>true</bold>
                </font>
@@ -357,7 +352,7 @@
                <string>Your current total balance</string>
               </property>
               <property name="text">
-               <string notr="true">21 000 000.00000000 BPS</string>
+               <string notr="true">0.000 000 00 GBCR</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -371,7 +366,6 @@
              <widget class="QLabel" name="labelWatchTotal">
               <property name="font">
                <font>
-                <family>Monospace</family>
                 <weight>75</weight>
                 <bold>true</bold>
                </font>
@@ -383,7 +377,7 @@
                <string>Current total balance in watch-only addresses</string>
               </property>
               <property name="text">
-               <string notr="true">21 000 000.00000000 BPS</string>
+               <string notr="true">0.000 000 00 GBCR</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -414,7 +408,6 @@
              <widget class="QLabel" name="labelBalance">
               <property name="font">
                <font>
-                <family>Monospace</family>
                 <weight>75</weight>
                 <bold>true</bold>
                </font>
@@ -426,7 +419,7 @@
                <string>Your current spendable balance</string>
               </property>
               <property name="text">
-               <string notr="true">21 000 000.00000000 BPS</string>
+               <string notr="true">0.000 000 00 GBCR</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -440,7 +433,6 @@
              <widget class="QLabel" name="labelWatchAvailable">
               <property name="font">
                <font>
-                <family>Monospace</family>
                 <weight>75</weight>
                 <bold>true</bold>
                </font>
@@ -452,7 +444,7 @@
                <string>Your current balance in watch-only addresses</string>
               </property>
               <property name="text">
-               <string notr="true">21 000 000.00000000 BPS</string>
+               <string notr="true">0.000 000 00 GBCR</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -537,13 +529,13 @@
                </size>
               </property>
               <property name="toolTip">
-               <string>The displayed information may be out of date. Your wallet automatically synchronizes with the Bitcoin network after a connection is established, but this process has not completed yet.</string>
+               <string>The displayed information may be out of date. Your wallet automatically synchronizes with the Gold BCR network after a connection is established, but this process has not completed yet.</string>
               </property>
               <property name="text">
                <string/>
               </property>
               <property name="icon">
-               <iconset resource="../bitcoin.qrc">
+               <iconset resource="../goldbcr.qrc">
                 <normaloff>:/icons/warning</normaloff>
                 <disabledoff>:/icons/warning</disabledoff>:/icons/warning</iconset>
               </property>

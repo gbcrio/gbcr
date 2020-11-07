@@ -303,7 +303,7 @@ static int secp256k1_ge_is_valid_var(const secp256k1_ge *a) {
     return secp256k1_fe_equal_var(&y2, &x3);
 }
 
-static SECP256K1_INLINE void secp256k1_gej_double(secp256k1_gej *r, const secp256k1_gej *a) {
+static void secp256k1_gej_double_var(secp256k1_gej *r, const secp256k1_gej *a, secp256k1_fe *rzr) {
     /* Operations: 3 mul, 4 sqr, 0 normalize, 12 mul_int/add/negate.
      *
      * Note that there is an implementation described at
@@ -312,8 +312,29 @@ static SECP256K1_INLINE void secp256k1_gej_double(secp256k1_gej *r, const secp25
      * mainly because it requires more normalizations.
      */
     secp256k1_fe t1,t2,t3,t4;
-
+    /** For secp256k1, 2Q is infinity if and only if Q is infinity. This is because if 2Q = infinity,
+     *  Q must equal -Q, or that Q.y == -(Q.y), or Q.y is 0. For a point on y^2 = x^3 + 7 to have
+     *  y=0, x^3 must be -7 mod p. However, -7 has no cube root mod p.
+     *
+     *  Having said this, if this function receives a point on a sextic twist, e.g. by
+     *  a fault attack, it is possible for y to be 0. This happens for y^2 = x^3 + 6,
+     *  since -6 does have a cube root mod p. For this point, this function will not set
+     *  the infinity flag even though the point doubles to infinity, and the result
+     *  point will be gibberish (z = 0 but infinity = 0).
+     */
     r->infinity = a->infinity;
+    if (r->infinity) {
+        if (rzr != NULL) {
+            secp256k1_fe_set_int(rzr, 1);
+        }
+        return;
+    }
+
+    if (rzr != NULL) {
+        *rzr = a->y;
+        secp256k1_fe_normalize_weak(rzr);
+        secp256k1_fe_mul_int(rzr, 2);
+    }
 
     secp256k1_fe_mul(&r->z, &a->z, &a->y);
     secp256k1_fe_mul_int(&r->z, 2);       /* Z' = 2*Y*Z (2) */
@@ -337,32 +358,9 @@ static SECP256K1_INLINE void secp256k1_gej_double(secp256k1_gej *r, const secp25
     secp256k1_fe_add(&r->y, &t2);         /* Y' = 36*X^3*Y^2 - 27*X^6 - 8*Y^4 (4) */
 }
 
-static void secp256k1_gej_double_var(secp256k1_gej *r, const secp256k1_gej *a, secp256k1_fe *rzr) {
-    /** For secp256k1, 2Q is infinity if and only if Q is infinity. This is because if 2Q = infinity,
-     *  Q must equal -Q, or that Q.y == -(Q.y), or Q.y is 0. For a point on y^2 = x^3 + 7 to have
-     *  y=0, x^3 must be -7 mod p. However, -7 has no cube root mod p.
-     *
-     *  Having said this, if this function receives a point on a sextic twist, e.g. by
-     *  a fault attack, it is possible for y to be 0. This happens for y^2 = x^3 + 6,
-     *  since -6 does have a cube root mod p. For this point, this function will not set
-     *  the infinity flag even though the point doubles to infinity, and the result
-     *  point will be gibberish (z = 0 but infinity = 0).
-     */
-    if (a->infinity) {
-        r->infinity = 1;
-        if (rzr != NULL) {
-            secp256k1_fe_set_int(rzr, 1);
-        }
-        return;
-    }
-
-    if (rzr != NULL) {
-        *rzr = a->y;
-        secp256k1_fe_normalize_weak(rzr);
-        secp256k1_fe_mul_int(rzr, 2);
-    }
-
-    secp256k1_gej_double(r, a);
+static SECP256K1_INLINE void secp256k1_gej_double_nonzero(secp256k1_gej *r, const secp256k1_gej *a, secp256k1_fe *rzr) {
+    VERIFY_CHECK(!secp256k1_gej_is_infinity(a));
+    secp256k1_gej_double_var(r, a, rzr);
 }
 
 static void secp256k1_gej_add_var(secp256k1_gej *r, const secp256k1_gej *a, const secp256k1_gej *b, secp256k1_fe *rzr) {
@@ -399,7 +397,7 @@ static void secp256k1_gej_add_var(secp256k1_gej *r, const secp256k1_gej *a, cons
             if (rzr != NULL) {
                 secp256k1_fe_set_int(rzr, 0);
             }
-            secp256k1_gej_set_infinity(r);
+            r->infinity = 1;
         }
         return;
     }
@@ -449,7 +447,7 @@ static void secp256k1_gej_add_ge_var(secp256k1_gej *r, const secp256k1_gej *a, c
             if (rzr != NULL) {
                 secp256k1_fe_set_int(rzr, 0);
             }
-            secp256k1_gej_set_infinity(r);
+            r->infinity = 1;
         }
         return;
     }
@@ -508,7 +506,7 @@ static void secp256k1_gej_add_zinv_var(secp256k1_gej *r, const secp256k1_gej *a,
         if (secp256k1_fe_normalizes_to_zero_var(&i)) {
             secp256k1_gej_double_var(r, a, NULL);
         } else {
-            secp256k1_gej_set_infinity(r);
+            r->infinity = 1;
         }
         return;
     }

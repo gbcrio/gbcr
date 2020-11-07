@@ -1,11 +1,12 @@
-// Copyright (c) 2018-2019 The Bitcoin Core developers
+// Copyright (c) 2020 GBCR Developers
+// Copyright (c) 2018 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <iostream>
 
-// bitcoin includes.
-#include <..\src\script\bitcoinconsensus.h>
+// goldbcr includes.
+#include <..\src\script\goldbcrconsensus.h>
 #include <..\src\primitives\transaction.h>
 #include <..\src\script\script.h>
 #include <..\src\streams.h>
@@ -31,7 +32,7 @@ CMutableTransaction BuildSpendingTransaction(const CScript& scriptSig, const CSc
 
 int main()
 {
-    std::cout << "bitcoinconsensus version: " << bitcoinconsensus_version() << std::endl;
+    std::cout << "gbcrconsensus version: " << goldbcrconsensus_version() << std::endl;
 
     CScript pubKeyScript;
     pubKeyScript << OP_1 << OP_0 << OP_1;
@@ -44,8 +45,8 @@ int main()
     CDataStream stream(SER_NETWORK, PROTOCOL_VERSION);
     stream << vanillaSpendTx;
 
-    bitcoinconsensus_error err;
-    auto op0Result = bitcoinconsensus_verify_script_with_amount(pubKeyScript.data(), pubKeyScript.size(), amount, (const unsigned char*)&stream[0], stream.size(), 0, bitcoinconsensus_SCRIPT_FLAGS_VERIFY_ALL, &err);
+    goldbcrconsensus_error err;
+    auto op0Result = goldbcrconsensus_verify_script_with_amount(pubKeyScript.data(), pubKeyScript.size(), amount, (const unsigned char*)&stream[0], stream.size(), 0, goldbcrconsensus_SCRIPT_FLAGS_VERIFY_ALL, &err);
     std::cout << "Op0 result: " << op0Result << ", error code " << err << std::endl;
 
     getchar();

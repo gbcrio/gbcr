@@ -14,4 +14,3 @@ setban
 hist
 ser
 unselect
-lowercased

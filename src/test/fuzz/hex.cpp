@@ -1,10 +1,10 @@
-// Copyright (c) 2019-2020 The Bitcoin Core developers
+// Copyright (c) 2019 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <core_io.h>
-#include <primitives/block.h>
 #include <pubkey.h>
+#include <primitives/block.h>
 #include <rpc/util.h>
 #include <test/fuzz/fuzz.h>
 #include <uint256.h>
@@ -16,8 +16,7 @@
 #include <string>
 #include <vector>
 
-void initialize()
-{
+void initialize() {
     static const ECCVerifyHandle verify_handle;
 }
 

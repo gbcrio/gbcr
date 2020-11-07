@@ -1,3 +1,4 @@
+// Copyright (c) 2020 GBCR developers
 // Copyright (c) 2011-2019 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -8,7 +9,7 @@
 #include <qt/forms/ui_receivecoinsdialog.h>
 
 #include <qt/addresstablemodel.h>
-#include <qt/bitcoinaddresstypes.h>
+#include <qt/goldbcraddresstypes.h>
 #include <qt/optionsmodel.h>
 #include <qt/platformstyle.h>
 #include <qt/receiverequestdialog.h>
@@ -93,15 +94,15 @@ void ReceiveCoinsDialog::setModel(WalletModel *_model)
         // Last 2 columns are set by the columnResizingFixer, when the table geometry is ready.
         columnResizingFixer = new GUIUtil::TableViewLastColumnResizingFixer(tableView, AMOUNT_MINIMUM_COLUMN_WIDTH, DATE_COLUMN_WIDTH, this);
 
-        ui->addressTypeSelector->setModel(new BitcoinAddressTypes(this));
+        ui->addressTypeSelector->setModel(new GoldBCRAddressTypes(this));
         
         // user explicitly set the type, use it
         if (model->wallet().getDefaultAddressType() == OutputType::BECH32) {
-            ui->addressTypeSelector->setCurrentIndex(BitcoinAddressType::NATIVE_SEGWIT);
+            ui->addressTypeSelector->setCurrentIndex(GoldBCRAddressType::NATIVE_SEGWIT);
         } else if (model->wallet().getDefaultAddressType() == OutputType::P2SH_SEGWIT){
-            ui->addressTypeSelector->setCurrentIndex(BitcoinAddressType::NESTED_SEGWIT);
+            ui->addressTypeSelector->setCurrentIndex(GoldBCRAddressType::NESTED_SEGWIT);
         } else {
-            ui->addressTypeSelector->setCurrentIndex(BitcoinAddressType::LEGACY);
+            ui->addressTypeSelector->setCurrentIndex(GoldBCRAddressType::LEGACY);
         }
 
         // Set the button to be enabled or disabled based on whether the wallet can give out new addresses.
@@ -154,49 +155,26 @@ void ReceiveCoinsDialog::on_receiveButton_clicked()
     QString label = ui->reqLabel->text();
     /* Generate new receiving address */
     OutputType address_type;
-    BitcoinAddressType address_type_selected = (BitcoinAddressType)ui->addressTypeSelector->currentIndex();
-    if (BitcoinAddressType::NATIVE_SEGWIT == address_type_selected) {
+    GoldBCRAddressType address_type_selected = (GoldBCRAddressType)ui->addressTypeSelector->currentIndex();
+    if (GoldBCRAddressType::NATIVE_SEGWIT == address_type_selected) {
         address_type = OutputType::BECH32;
-    } else if (BitcoinAddressType::NESTED_SEGWIT == address_type_selected) {
+    } else if (GoldBCRAddressType::NESTED_SEGWIT == address_type_selected) {
         address_type = OutputType::P2SH_SEGWIT;
     } else {
         address_type = OutputType::LEGACY;
     }
     address = model->getAddressTableModel()->addRow(AddressTableModel::Receive, label, "", address_type);
-
-    switch(model->getAddressTableModel()->getEditStatus())
-    {
-    case AddressTableModel::EditStatus::OK: {
-        // Success
-        SendCoinsRecipient info(address, label,
-            ui->reqAmount->value(), ui->reqMessage->text());
-        ReceiveRequestDialog *dialog = new ReceiveRequestDialog(this);
-        dialog->setAttribute(Qt::WA_DeleteOnClose);
-        dialog->setModel(model);
-        dialog->setInfo(info);
-        dialog->show();
-
-        /* Store request for later reference */
-        model->getRecentRequestsTableModel()->addNewRequest(info);
-        break;
-    }
-    case AddressTableModel::EditStatus::WALLET_UNLOCK_FAILURE:
-        QMessageBox::critical(this, windowTitle(),
-            tr("Could not unlock wallet."),
-            QMessageBox::Ok, QMessageBox::Ok);
-        break;
-    case AddressTableModel::EditStatus::KEY_GENERATION_FAILURE:
-        QMessageBox::critical(this, windowTitle(),
-            tr("Could not generate new %1 address").arg(QString::fromStdString(FormatOutputType(address_type))),
-            QMessageBox::Ok, QMessageBox::Ok);
-        break;
-    // These aren't valid return values for our action
-    case AddressTableModel::EditStatus::INVALID_ADDRESS:
-    case AddressTableModel::EditStatus::DUPLICATE_ADDRESS:
-    case AddressTableModel::EditStatus::NO_CHANGES:
-        assert(false);
-    }
+    SendCoinsRecipient info(address, label,
+        ui->reqAmount->value(), ui->reqMessage->text());
+    ReceiveRequestDialog *dialog = new ReceiveRequestDialog(this);
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    dialog->setModel(model);
+    dialog->setInfo(info);
+    dialog->show();
     clear();
+
+    /* Store request for later reference */
+    model->getRecentRequestsTableModel()->addNewRequest(info);
 }
 
 void ReceiveCoinsDialog::on_recentRequestsView_doubleClicked(const QModelIndex &index)
@@ -248,6 +226,22 @@ void ReceiveCoinsDialog::resizeEvent(QResizeEvent *event)
     columnResizingFixer->stretchColumnWidth(RecentRequestsTableModel::Message);
 }
 
+void ReceiveCoinsDialog::keyPressEvent(QKeyEvent *event)
+{
+    if (event->key() == Qt::Key_Return)
+    {
+        // press return -> submit form
+        if (ui->reqLabel->hasFocus() || ui->reqAmount->hasFocus() || ui->reqMessage->hasFocus())
+        {
+            event->ignore();
+            on_receiveButton_clicked();
+            return;
+        }
+    }
+
+    this->QDialog::keyPressEvent(event);
+}
+
 QModelIndex ReceiveCoinsDialog::selectedRow()
 {
     if(!model || !model->getRecentRequestsTableModel() || !ui->recentRequestsView->selectionModel())
@@ -288,7 +282,7 @@ void ReceiveCoinsDialog::copyURI()
     }
 
     const RecentRequestsTableModel * const submodel = model->getRecentRequestsTableModel();
-    const QString uri = GUIUtil::formatBitcoinURI(submodel->entry(sel.row()).recipient);
+    const QString uri = GUIUtil::formatGoldBCRURI(submodel->entry(sel.row()).recipient);
     GUIUtil::setClipboard(uri);
 }
 

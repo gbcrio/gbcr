@@ -1,3 +1,4 @@
+// Copyright (c) 2020 GBCR Developers
 // Copyright (c) 2011-2019 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -6,7 +7,7 @@
 #define BITCOIN_QT_SENDCOINSRECIPIENT_H
 
 #if defined(HAVE_CONFIG_H)
-#include <config/bitcoin-config.h>
+#include <config/goldbcr-config.h>
 #endif
 
 #include <amount.h>
@@ -44,21 +45,30 @@ public:
     static const int CURRENT_VERSION = 1;
     int nVersion;
 
-    SERIALIZE_METHODS(SendCoinsRecipient, obj)
-    {
-        std::string address_str, label_str, message_str, auth_merchant_str;
+    ADD_SERIALIZE_METHODS;
 
-        SER_WRITE(obj, address_str = obj.address.toStdString());
-        SER_WRITE(obj, label_str = obj.label.toStdString());
-        SER_WRITE(obj, message_str = obj.message.toStdString());
-        SER_WRITE(obj, auth_merchant_str = obj.authenticatedMerchant.toStdString());
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action) {
+        std::string sAddress = address.toStdString();
+        std::string sLabel = label.toStdString();
+        std::string sMessage = message.toStdString();
+        std::string sAuthenticatedMerchant = authenticatedMerchant.toStdString();
 
-        READWRITE(obj.nVersion, address_str, label_str, obj.amount, message_str, obj.sPaymentRequest, auth_merchant_str);
+        READWRITE(this->nVersion);
+        READWRITE(sAddress);
+        READWRITE(sLabel);
+        READWRITE(amount);
+        READWRITE(sMessage);
+        READWRITE(sPaymentRequest);
+        READWRITE(sAuthenticatedMerchant);
 
-        SER_READ(obj, obj.address = QString::fromStdString(address_str));
-        SER_READ(obj, obj.label = QString::fromStdString(label_str));
-        SER_READ(obj, obj.message = QString::fromStdString(message_str));
-        SER_READ(obj, obj.authenticatedMerchant = QString::fromStdString(auth_merchant_str));
+        if (ser_action.ForRead())
+        {
+            address = QString::fromStdString(sAddress);
+            label = QString::fromStdString(sLabel);
+            message = QString::fromStdString(sMessage);
+            authenticatedMerchant = QString::fromStdString(sAuthenticatedMerchant);
+        }
     }
 };
 

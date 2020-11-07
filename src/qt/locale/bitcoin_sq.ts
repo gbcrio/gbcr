@@ -116,10 +116,6 @@
         <translation>Përsërisni fjalëkalimin e ri</translation>
     </message>
     <message>
-        <source>Show passphrase</source>
-        <translation>Shfaqe fjalëkalimin</translation>
-    </message>
-    <message>
         <source>Encrypt wallet</source>
         <translation>Kripto portofolin</translation>
     </message>
@@ -154,14 +150,6 @@
     <message>
         <source>Wallet encrypted</source>
         <translation>Portofoli u enkriptua</translation>
-    </message>
-    <message>
-        <source>Enter the new passphrase for the wallet.&lt;br/&gt;Please use a passphrase of &lt;b&gt;ten or more random characters&lt;/b&gt;, or &lt;b&gt;eight or more words&lt;/b&gt;.</source>
-        <translation>Jepe fjalëkalimin e ri për portofolin. Ju lutemi të përdorni një fjalkalim prej dhjetë ose më shumë shkronjave të rëndomta, ose tetë e më shumë fjalë.</translation>
-    </message>
-    <message>
-        <source>Enter the old passphrase and new passphrase for the wallet.</source>
-        <translation>Jepe fjalëkalimin e vjetër dhe fjalkalimin e ri për portofolin.</translation>
     </message>
     <message>
         <source>Wallet encryption failed</source>

@@ -1,4 +1,5 @@
-// Copyright (c) 2015-2020 The Bitcoin Core developers
+// Copyright (c) 2020 GBCR Developers
+// Copyright (c) 2015-2019 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -30,6 +31,9 @@ void CScheduler::serviceQueue()
     // is called.
     while (!shouldStop()) {
         try {
+            if (!shouldStop() && taskQueue.empty()) {
+                REVERSE_LOCK(lock);
+            }
             while (!shouldStop() && taskQueue.empty()) {
                 // Wait until there is something to do.
                 newTaskScheduled.wait(lock);
@@ -66,6 +70,18 @@ void CScheduler::serviceQueue()
     }
     --nThreadsServicingQueue;
     newTaskScheduled.notify_one();
+}
+
+void CScheduler::stop(bool drain)
+{
+    {
+        LOCK(newTaskMutex);
+        if (drain)
+            stopWhenEmpty = true;
+        else
+            stopRequested = true;
+    }
+    newTaskScheduled.notify_all();
 }
 
 void CScheduler::schedule(CScheduler::Function f, std::chrono::system_clock::time_point t)
@@ -110,8 +126,8 @@ void CScheduler::scheduleEvery(CScheduler::Function f, std::chrono::milliseconds
     scheduleFromNow([=] { Repeat(*this, f, delta); }, delta);
 }
 
-size_t CScheduler::getQueueInfo(std::chrono::system_clock::time_point& first,
-                                std::chrono::system_clock::time_point& last) const
+size_t CScheduler::getQueueInfo(std::chrono::system_clock::time_point &first,
+                             std::chrono::system_clock::time_point &last) const
 {
     LOCK(newTaskMutex);
     size_t result = taskQueue.size();
@@ -122,15 +138,13 @@ size_t CScheduler::getQueueInfo(std::chrono::system_clock::time_point& first,
     return result;
 }
 
-bool CScheduler::AreThreadsServicingQueue() const
-{
+bool CScheduler::AreThreadsServicingQueue() const {
     LOCK(newTaskMutex);
     return nThreadsServicingQueue;
 }
 
 
-void SingleThreadedSchedulerClient::MaybeScheduleProcessQueue()
-{
+void SingleThreadedSchedulerClient::MaybeScheduleProcessQueue() {
     {
         LOCK(m_cs_callbacks_pending);
         // Try to avoid scheduling too many copies here, but if we
@@ -142,9 +156,8 @@ void SingleThreadedSchedulerClient::MaybeScheduleProcessQueue()
     m_pscheduler->schedule(std::bind(&SingleThreadedSchedulerClient::ProcessQueue, this), std::chrono::system_clock::now());
 }
 
-void SingleThreadedSchedulerClient::ProcessQueue()
-{
-    std::function<void()> callback;
+void SingleThreadedSchedulerClient::ProcessQueue() {
+    std::function<void ()> callback;
     {
         LOCK(m_cs_callbacks_pending);
         if (m_are_callbacks_running) return;
@@ -160,8 +173,7 @@ void SingleThreadedSchedulerClient::ProcessQueue()
     struct RAIICallbacksRunning {
         SingleThreadedSchedulerClient* instance;
         explicit RAIICallbacksRunning(SingleThreadedSchedulerClient* _instance) : instance(_instance) {}
-        ~RAIICallbacksRunning()
-        {
+        ~RAIICallbacksRunning() {
             {
                 LOCK(instance->m_cs_callbacks_pending);
                 instance->m_are_callbacks_running = false;
@@ -173,8 +185,7 @@ void SingleThreadedSchedulerClient::ProcessQueue()
     callback();
 }
 
-void SingleThreadedSchedulerClient::AddToProcessQueue(std::function<void()> func)
-{
+void SingleThreadedSchedulerClient::AddToProcessQueue(std::function<void ()> func) {
     assert(m_pscheduler);
 
     {
@@ -184,8 +195,7 @@ void SingleThreadedSchedulerClient::AddToProcessQueue(std::function<void()> func
     MaybeScheduleProcessQueue();
 }
 
-void SingleThreadedSchedulerClient::EmptyQueue()
-{
+void SingleThreadedSchedulerClient::EmptyQueue() {
     assert(!m_pscheduler->AreThreadsServicingQueue());
     bool should_continue = true;
     while (should_continue) {
@@ -195,8 +205,7 @@ void SingleThreadedSchedulerClient::EmptyQueue()
     }
 }
 
-size_t SingleThreadedSchedulerClient::CallbacksPending()
-{
+size_t SingleThreadedSchedulerClient::CallbacksPending() {
     LOCK(m_cs_callbacks_pending);
     return m_callbacks_pending.size();
 }

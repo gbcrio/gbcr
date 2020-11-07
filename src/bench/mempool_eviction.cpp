@@ -4,7 +4,6 @@
 
 #include <bench/bench.h>
 #include <policy/policy.h>
-#include <test/util/setup_common.h>
 #include <txmempool.h>
 
 
@@ -16,23 +15,15 @@ static void AddTx(const CTransactionRef& tx, const CAmount& nFee, CTxMemPool& po
     unsigned int sigOpCost = 4;
     LockPoints lp;
     pool.addUnchecked(CTxMemPoolEntry(
-        tx, nFee, nTime, nHeight,
-        spendsCoinbase, sigOpCost, lp));
+                                         tx, nFee, nTime, nHeight,
+                                         spendsCoinbase, sigOpCost, lp));
 }
 
 // Right now this is only testing eviction performance in an extremely small
 // mempool. Code needs to be written to generate a much wider variety of
 // unique transactions for a more meaningful performance measurement.
-static void MempoolEviction(benchmark::Bench& bench)
+static void MempoolEviction(benchmark::State& state)
 {
-    TestingSetup test_setup{
-        CBaseChainParams::REGTEST,
-        /* extra_args */ {
-            "-nodebuglogfile",
-            "-nodebug",
-        },
-    };
-
     CMutableTransaction tx1 = CMutableTransaction();
     tx1.vin.resize(1);
     tx1.vin[0].scriptSig = CScript() << OP_1;
@@ -125,7 +116,7 @@ static void MempoolEviction(benchmark::Bench& bench)
     const CTransactionRef tx6_r{MakeTransactionRef(tx6)};
     const CTransactionRef tx7_r{MakeTransactionRef(tx7)};
 
-    bench.run([&]() NO_THREAD_SAFETY_ANALYSIS {
+    while (state.KeepRunning()) {
         AddTx(tx1_r, 10000LL, pool);
         AddTx(tx2_r, 5000LL, pool);
         AddTx(tx3_r, 20000LL, pool);
@@ -135,7 +126,7 @@ static void MempoolEviction(benchmark::Bench& bench)
         AddTx(tx7_r, 9000LL, pool);
         pool.TrimToSize(pool.DynamicMemoryUsage() * 3 / 4);
         pool.TrimToSize(GetVirtualTransactionSize(*tx1_r));
-    });
+    }
 }
 
-BENCHMARK(MempoolEviction);
+BENCHMARK(MempoolEviction, 41000);

@@ -1,29 +1,40 @@
-// Copyright (c) 2016-2020 The Bitcoin Core developers
+// Copyright (c) 2020 GBCR Developers
+// Copyright (c) 2016-2019 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <fs.h>
 #include <util/system.h>
-#include <util/translation.h>
-#include <wallet/salvage.h>
 #include <wallet/wallet.h>
 #include <wallet/walletutil.h>
 
 namespace WalletTool {
 
 // The standard wallet deleter function blocks on the validation interface
-// queue, which doesn't exist for the bitcoin-wallet. Define our own
+// queue, which doesn't exist for the goldbcr-wallet. Define our own
 // deleter here.
 static void WalletToolReleaseWallet(CWallet* wallet)
 {
     wallet->WalletLogPrintf("Releasing wallet\n");
-    wallet->Close();
+    wallet->Flush(true);
     delete wallet;
 }
 
-static void WalletCreate(CWallet* wallet_instance)
+static std::shared_ptr<CWallet> CreateWallet(const std::string& name, const fs::path& path)
 {
+    if (fs::exists(path)) {
+        tfm::format(std::cerr, "Error: File exists already\n");
+        return nullptr;
+    }
+    // dummy chain interface
+    std::shared_ptr<CWallet> wallet_instance(new CWallet(nullptr /* chain */, WalletLocation(name), WalletDatabase::Create(path)), WalletToolReleaseWallet);
     LOCK(wallet_instance->cs_wallet);
+    bool first_run = true;
+    DBErrors load_wallet_ret = wallet_instance->LoadWallet(first_run);
+    if (load_wallet_ret != DBErrors::LOAD_OK) {
+        tfm::format(std::cerr, "Error creating %s", name);
+        return nullptr;
+    }
 
     wallet_instance->SetMinVersion(FEATURE_HD_SPLIT);
 
@@ -34,26 +45,18 @@ static void WalletCreate(CWallet* wallet_instance)
 
     tfm::format(std::cout, "Topping up keypool...\n");
     wallet_instance->TopUpKeyPool();
+    return wallet_instance;
 }
 
-static std::shared_ptr<CWallet> MakeWallet(const std::string& name, const fs::path& path, bool create)
+static std::shared_ptr<CWallet> LoadWallet(const std::string& name, const fs::path& path)
 {
-    DatabaseOptions options;
-    DatabaseStatus status;
-    if (create) {
-        options.require_create = true;
-    } else {
-        options.require_existing = true;
-    }
-    bilingual_str error;
-    std::unique_ptr<WalletDatabase> database = MakeDatabase(path, options, status, error);
-    if (!database) {
-        tfm::format(std::cerr, "%s\n", error.original);
+    if (!fs::exists(path)) {
+        tfm::format(std::cerr, "Error: Wallet files does not exist\n");
         return nullptr;
     }
 
     // dummy chain interface
-    std::shared_ptr<CWallet> wallet_instance{new CWallet(nullptr /* chain */, name, std::move(database)), WalletToolReleaseWallet};
+    std::shared_ptr<CWallet> wallet_instance(new CWallet(nullptr /* chain */, WalletLocation(name), WalletDatabase::Create(path)), WalletToolReleaseWallet);
     DBErrors load_wallet_ret;
     try {
         bool first_run;
@@ -85,8 +88,6 @@ static std::shared_ptr<CWallet> MakeWallet(const std::string& name, const fs::pa
         }
     }
 
-    if (create) WalletCreate(wallet_instance.get());
-
     return wallet_instance;
 }
 
@@ -107,31 +108,25 @@ bool ExecuteWalletToolFunc(const std::string& command, const std::string& name)
     fs::path path = fs::absolute(name, GetWalletDir());
 
     if (command == "create") {
-        std::shared_ptr<CWallet> wallet_instance = MakeWallet(name, path, /* create= */ true);
+        std::shared_ptr<CWallet> wallet_instance = CreateWallet(name, path);
         if (wallet_instance) {
             WalletShowInfo(wallet_instance.get());
-            wallet_instance->Close();
+            wallet_instance->Flush(true);
         }
-    } else if (command == "info" || command == "salvage") {
-        if (command == "info") {
-            std::shared_ptr<CWallet> wallet_instance = MakeWallet(name, path, /* create= */ false);
-            if (!wallet_instance) return false;
-            WalletShowInfo(wallet_instance.get());
-            wallet_instance->Close();
-        } else if (command == "salvage") {
-            bilingual_str error;
-            std::vector<bilingual_str> warnings;
-            bool ret = RecoverDatabaseFile(path, error, warnings);
-            if (!ret) {
-                for (const auto& warning : warnings) {
-                    tfm::format(std::cerr, "%s\n", warning.original);
-                }
-                if (!error.empty()) {
-                    tfm::format(std::cerr, "%s\n", error.original);
-                }
-            }
-            return ret;
+    } else if (command == "info") {
+        if (!fs::exists(path)) {
+            tfm::format(std::cerr, "Error: no wallet file at %s\n", name);
+            return false;
         }
+        std::string error;
+        if (!WalletBatch::VerifyEnvironment(path, error)) {
+            tfm::format(std::cerr, "Error loading %s. Is wallet being used by other process?\n", name);
+            return false;
+        }
+        std::shared_ptr<CWallet> wallet_instance = LoadWallet(name, path);
+        if (!wallet_instance) return false;
+        WalletShowInfo(wallet_instance.get());
+        wallet_instance->Flush(true);
     } else {
         tfm::format(std::cerr, "Invalid command: %s\n", command);
         return false;

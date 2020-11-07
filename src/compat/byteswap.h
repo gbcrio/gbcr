@@ -1,3 +1,4 @@
+// Copyright (c) 2020 GBCR Developers
 // Copyright (c) 2014-2019 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -6,7 +7,7 @@
 #define BITCOIN_COMPAT_BYTESWAP_H
 
 #if defined(HAVE_CONFIG_H)
-#include <config/bitcoin-config.h>
+#include <config/goldbcr-config.h>
 #endif
 
 #include <stdint.h>

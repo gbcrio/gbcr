@@ -1,40 +1,44 @@
-Bitcoin PoS Core integration/staging tree
+Gold BCR Core integration/staging tree
 =====================================
 
-[Bitcoin Proof of Stake](https://www.bitcoinpos.net)
+https://goldbcr.io
 
-What is Bitcoin PoS?
-----------------
+# What is Gold BCR?
 
-[Bitcoin PoS](https://www.bitcoinpos.net) is an digital currency that enables instant payments to
-anyone, anywhere in the world. Bitcoin PoS uses peer-to-peer technology to operate
+# GBCR is decentralized gold-backed cryptocurrency that is secure and fast
+
+With a proof-of-stake consensus, backing coins with gold, this peer-to-peer electronic cash system is the next evolution in Bitcoin technology.
+
+Gold BCR is currently creating collaborative ventures with gold mining companies, whereby the digital asset is as defined underpinned by a stream of gold from the mines' productions.
+
+Gold BCR is an digital currency that enables instant payments to
+anyone, anywhere in the world. Gold BCR uses peer-to-peer technology to operate
 with no central authority: managing transactions and issuing money are carried
-out collectively by the network. Bitcoin PoS Core is the name of open source
+out collectively by the network. Gold BCR Core is the name of open source
 software which enables the use of this currency.
 
-Bitcoin PoS Core is built on top of Bitcoin Core. The difference between the two
-is the consensus algorithm: Bitcoin PoS Core uses Proof of Stake consensus, whilst
+Gold BCR Core is built on top of Bitcoin Core. The difference between the two
+is the consensus algorithm: Bitcoin Core uses Proof of Stake consensus, whilst
 Bitcoin Core uses Proof of Work. Using Proof of Stake as a consensus algorithm is
 allowing it not only to scale better and be orders of magnitude more efficient in
 terms of power consumption, but it is also lowering the entry barrier for contributing
 to the creation of new blocks.
 
 For more information, as well as an immediately usable, binary version of
-the Bitcoin PoS Core software, see https://www.bitcoinpos.net/#wallet-bps, or read the
-[original whitepaper](https://www.bitcoinpos.net/WhitePaperBPS.pdf).
+GBCR software, see https://goldbcr.io.
 
 License
 -------
 
-Bitcoin PoS Core is released under the terms of the MIT license. See [COPYING](COPYING) for more
+Gold BCR is released under the terms of the MIT license. See [COPYING](COPYING) for more
 information or see https://opensource.org/licenses/MIT.
 
 Development Process
 -------------------
 
-The `master` branch is regularly built (see `doc/build-*.md` for instructions) and tested, but it is not guaranteed to be
-completely stable. [Tags](https://github.com/bitcoin-pos/bitcoin-pos/tags) are created
-regularly from release branches to indicate new official, stable release versions of Bitcoin PoS Core.
+The `master` branch is regularly built and tested, but is not guaranteed to be
+completely stable. [Tags](https://github.com/gold-bcr/gold-bcr/tags) are created
+regularly to indicate new official, stable release versions of Gold BCR Core.
 
 The contribution workflow is described in [CONTRIBUTING.md](CONTRIBUTING.md)
 and useful hints for developers can be found in [doc/developer-notes.md](doc/developer-notes.md).

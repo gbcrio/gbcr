@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Copyright (c) 2020 GBCR Developers
 # Copyright (c) 2017-2019 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -38,7 +39,7 @@ from test_framework.messages import (
     CTxOut,
     ToHex,
 )
-from test_framework.test_framework import BitcoinTestFramework
+from test_framework.test_framework import GoldBCRTestFramework
 from test_framework.util import (
     assert_equal,
     create_confirmed_utxos,
@@ -46,7 +47,7 @@ from test_framework.util import (
 )
 
 
-class ChainstateWriteCrashTest(BitcoinTestFramework):
+class ChainstateWriteCrashTest(GoldBCRTestFramework):
     def set_test_params(self):
         self.num_nodes = 4
         self.setup_clean_chain = False
@@ -94,14 +95,14 @@ class ChainstateWriteCrashTest(BitcoinTestFramework):
                 return utxo_hash
             except:
                 # An exception here should mean the node is about to crash.
-                # If bitcoind exits, then try again.  wait_for_node_exit()
-                # should raise an exception if bitcoind doesn't exit.
+                # If goldbcrd exits, then try again.  wait_for_node_exit()
+                # should raise an exception if goldbcrd doesn't exit.
                 self.wait_for_node_exit(node_index, timeout=10)
             self.crashed_on_restart += 1
             time.sleep(1)
 
-        # If we got here, bitcoind isn't coming back up on restart.  Could be a
-        # bug in bitcoind, or we've gotten unlucky with our dbcrash ratio --
+        # If we got here, goldbcrd isn't coming back up on restart.  Could be a
+        # bug in goldbcrd, or we've gotten unlucky with our dbcrash ratio --
         # perhaps we generated a test case that blew up our cache?
         # TODO: If this happens a lot, we should try to restart without -dbcrashratio
         # and make sure that recovery happens.
@@ -195,7 +196,7 @@ class ChainstateWriteCrashTest(BitcoinTestFramework):
         while len(utxo_list) >= 2 and num_transactions < count:
             tx = CTransaction()
             input_amount = 0
-            for _ in range(2):
+            for i in range(2):
                 utxo = utxo_list.pop()
                 tx.vin.append(CTxIn(COutPoint(int(utxo['txid'], 16), utxo['vout'])))
                 input_amount += int(utxo['amount'] * COIN)
@@ -205,7 +206,7 @@ class ChainstateWriteCrashTest(BitcoinTestFramework):
                 # Sanity check -- if we chose inputs that are too small, skip
                 continue
 
-            for _ in range(3):
+            for i in range(3):
                 tx.vout.append(CTxOut(output_amount, hex_str_to_bytes(utxo['scriptPubKey'])))
 
             # Sign and send the transaction to get into the mempool
@@ -256,11 +257,7 @@ class ChainstateWriteCrashTest(BitcoinTestFramework):
             self.log.debug("Mining longer tip")
             block_hashes = []
             while current_height + 1 > self.nodes[3].getblockcount():
-                block_hashes.extend(self.nodes[3].generatetoaddress(
-                    nblocks=min(10, current_height + 1 - self.nodes[3].getblockcount()),
-                    # new address to avoid mining a block that has just been invalidated
-                    address=self.nodes[3].getnewaddress(),
-                ))
+                block_hashes.extend(self.nodes[3].generate(min(10, current_height + 1 - self.nodes[3].getblockcount())))
             self.log.debug("Syncing %d new blocks...", len(block_hashes))
             self.sync_node3blocks(block_hashes)
             utxo_list = self.nodes[3].listunspent()
@@ -284,7 +281,6 @@ class ChainstateWriteCrashTest(BitcoinTestFramework):
         for i in range(3):
             if self.restart_counts[i] == 0:
                 self.log.warning("Node %d never crashed during utxo flush!", i)
-
 
 if __name__ == "__main__":
     ChainstateWriteCrashTest().main()

@@ -12,7 +12,6 @@
 #include <random.h>
 #include <sync.h>
 #include <timedata.h>
-#include <tinyformat.h>
 #include <util/system.h>
 
 #include <fs.h>
@@ -154,6 +153,12 @@ public:
 //! how recent a successful connection should be before we allow an address to be evicted from tried
 #define ADDRMAN_REPLACEMENT_HOURS 4
 
+//! the maximum percentage of nodes to return in a getaddr call
+#define ADDRMAN_GETADDR_MAX_PCT 23
+
+//! the maximum number of nodes to return in a getaddr call
+#define ADDRMAN_GETADDR_MAX 2500
+
 //! Convenience
 #define ADDRMAN_TRIED_BUCKET_COUNT (1 << ADDRMAN_TRIED_BUCKET_COUNT_LOG2)
 #define ADDRMAN_NEW_BUCKET_COUNT (1 << ADDRMAN_NEW_BUCKET_COUNT_LOG2)
@@ -256,7 +261,7 @@ protected:
 #endif
 
     //! Select several addresses at once.
-    void GetAddr_(std::vector<CAddress> &vAddr, size_t max_addresses, size_t max_pct) EXCLUSIVE_LOCKS_REQUIRED(cs);
+    void GetAddr_(std::vector<CAddress> &vAddr) EXCLUSIVE_LOCKS_REQUIRED(cs);
 
     //! Mark an entry as currently-connected-to.
     void Connected_(const CService &addr, int64_t nTime) EXCLUSIVE_LOCKS_REQUIRED(cs);
@@ -265,14 +270,6 @@ protected:
     void SetServices_(const CService &addr, ServiceFlags nServices) EXCLUSIVE_LOCKS_REQUIRED(cs);
 
 public:
-    //! Serialization versions.
-    enum class Format : uint8_t {
-        V0_HISTORICAL = 0,    //!< historic format, before commit e6b343d88
-        V1_DETERMINISTIC = 1, //!< for pre-asmap files
-        V2_ASMAP = 2,         //!< for files including asmap version
-        V3_BIP155 = 3,        //!< same as V2_ASMAP plus addresses are in BIP155 format
-    };
-
     // Compressed IP->ASN mapping, loaded from a file when a node starts.
     // Should be always empty if no file was provided.
     // This mapping is then used for bucketing nodes in Addrman.
@@ -294,8 +291,8 @@ public:
 
 
     /**
-     * Serialized format.
-     * * version byte (@see `Format`)
+     * serialized format:
+     * * version byte (1 for pre-asmap files, 2 for files including asmap version)
      * * 0x20 + nKey (serialized as if it were a vector, for backward compatibility)
      * * nNew
      * * nTried
@@ -322,16 +319,13 @@ public:
      * We don't use SERIALIZE_METHODS since the serialization and deserialization code has
      * very little in common.
      */
-    template <typename Stream>
-    void Serialize(Stream& s_) const
+    template<typename Stream>
+    void Serialize(Stream &s) const
     {
         LOCK(cs);
 
-        // Always serialize in the latest version (currently Format::V3_BIP155).
-
-        OverrideStream<Stream> s(&s_, s_.GetType(), s_.GetVersion() | ADDRV2_FORMAT);
-
-        s << static_cast<uint8_t>(Format::V3_BIP155);
+        unsigned char nVersion = 2;
+        s << nVersion;
         s << ((unsigned char)32);
         s << nKey;
         s << nNew;
@@ -382,34 +376,14 @@ public:
         s << asmap_version;
     }
 
-    template <typename Stream>
-    void Unserialize(Stream& s_)
+    template<typename Stream>
+    void Unserialize(Stream& s)
     {
         LOCK(cs);
 
         Clear();
-
-        Format format;
-        s_ >> Using<CustomUintFormatter<1>>(format);
-
-        static constexpr Format maximum_supported_format = Format::V3_BIP155;
-        if (format > maximum_supported_format) {
-            throw std::ios_base::failure(strprintf(
-                "Unsupported format of addrman database: %u. Maximum supported is %u. "
-                "Continuing operation without using the saved list of peers.",
-                static_cast<uint8_t>(format),
-                static_cast<uint8_t>(maximum_supported_format)));
-        }
-
-        int stream_version = s_.GetVersion();
-        if (format >= Format::V3_BIP155) {
-            // Add ADDRV2_FORMAT to the version so that the CNetAddr and CAddress
-            // unserialize methods know that an address in addrv2 format is coming.
-            stream_version |= ADDRV2_FORMAT;
-        }
-
-        OverrideStream<Stream> s(&s_, s_.GetType(), stream_version);
-
+        unsigned char nVersion;
+        s >> nVersion;
         unsigned char nKeySize;
         s >> nKeySize;
         if (nKeySize != 32) throw std::ios_base::failure("Incorrect keysize in addrman deserialization");
@@ -418,7 +392,7 @@ public:
         s >> nTried;
         int nUBuckets = 0;
         s >> nUBuckets;
-        if (format >= Format::V1_DETERMINISTIC) {
+        if (nVersion != 0) {
             nUBuckets ^= (1 << 30);
         }
 
@@ -481,7 +455,7 @@ public:
             supplied_asmap_version = SerializeHash(m_asmap);
         }
         uint256 serialized_asmap_version;
-        if (format >= Format::V2_ASMAP) {
+        if (nVersion > 1) {
             s >> serialized_asmap_version;
         }
 
@@ -489,13 +463,13 @@ public:
             CAddrInfo &info = mapInfo[n];
             int bucket = entryToBucket[n];
             int nUBucketPos = info.GetBucketPosition(nKey, true, bucket);
-            if (format >= Format::V2_ASMAP && nUBuckets == ADDRMAN_NEW_BUCKET_COUNT && vvNew[bucket][nUBucketPos] == -1 &&
+            if (nVersion == 2 && nUBuckets == ADDRMAN_NEW_BUCKET_COUNT && vvNew[bucket][nUBucketPos] == -1 &&
                 info.nRefCount < ADDRMAN_NEW_BUCKETS_PER_ADDRESS && serialized_asmap_version == supplied_asmap_version) {
                 // Bucketing has not changed, using existing bucket positions for the new table
                 vvNew[bucket][nUBucketPos] = n;
                 info.nRefCount++;
             } else {
-                // In case the new table data cannot be used (format unknown, bucket count wrong or new asmap),
+                // In case the new table data cannot be used (nVersion unknown, bucket count wrong or new asmap),
                 // try to give them a reference based on their primary source address.
                 LogPrint(BCLog::ADDRMAN, "Bucketing method was updated, re-bucketing addrman entries from disk\n");
                 bucket = info.GetNewBucket(nKey, m_asmap);
@@ -664,13 +638,13 @@ public:
     }
 
     //! Return a bunch of addresses, selected at random.
-    std::vector<CAddress> GetAddr(size_t max_addresses, size_t max_pct)
+    std::vector<CAddress> GetAddr()
     {
         Check();
         std::vector<CAddress> vAddr;
         {
             LOCK(cs);
-            GetAddr_(vAddr, max_addresses, max_pct);
+            GetAddr_(vAddr);
         }
         Check();
         return vAddr;

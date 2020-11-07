@@ -1,4 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
+// Copyright (c) 2020 GBCR Developers
 // Copyright (c) 2009-2019 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -64,19 +65,12 @@ struct Params {
      * This prevents us from warning about the CSV and segwit activations. */
     int MinBIP9WarningHeight;
     /** The size of the step going towards reward matching - rewards from
-     * both chains, bitcoin and bitcoin pos are coming in sync with steps of this size. */
-    int BPSRewardMatchStep;
-    /** Block height at which BPSRewardMatch becomes active - rewards from
-     * both chains, bitcoin and bitcoin pos are in sync as of this height. */
-    int BPSRewardMatchHeight;
+     * both chains, goldbcr and Gold BCR are coming in sync with steps of this size. */
+
     /** Block height at which BPSDiffAdj becomes active - difficulty adjustment
      * formula is changed so that block times are more reliable. */
     int BPSDiffAdjHeight;
-    /**
-     * Minimum blocks including miner confirmation of the total of 2016 blocks in a retargeting period,
-     * (nPowTargetTimespan / nPowTargetSpacing) which is also used for BIP9 deployments.
-     * Examples: 1916 for 95%, 1512 for testchains.
-     */
+
     uint32_t nRuleChangeActivationThreshold;
     uint32_t nMinerConfirmationWindow;
     BIP9Deployment vDeployments[MAX_VERSION_BITS_DEPLOYMENTS];
@@ -108,13 +102,6 @@ struct Params {
     int nEnableHeaderSignatureHeight;
     /** Block sync-checkpoint span*/
     int nCheckpointSpan;
-
-    /**
-     * If true, witness commitments contain a payload equal to a Bitcoin Script solution
-     * to the signet challenge. See BIP325.
-     */
-    bool signet_blocks{false};
-    std::vector<uint8_t> signet_challenge;
 };
 } // namespace Consensus
 

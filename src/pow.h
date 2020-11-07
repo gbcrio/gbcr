@@ -14,7 +14,6 @@ class CBlockHeader;
 class CBlockIndex;
 class uint256;
 
-// The target spacing used up to the synchronization block
 static const int64_t STAKE_V1_TARGET_SPACING = 15;
 
 const CBlockIndex* GetLastBlockIndex(const CBlockIndex* pindex, bool fProofOfStake);

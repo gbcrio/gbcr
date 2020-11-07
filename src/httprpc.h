@@ -5,14 +5,11 @@
 #ifndef BITCOIN_HTTPRPC_H
 #define BITCOIN_HTTPRPC_H
 
-namespace util {
-class Ref;
-} // namespace util
 
 /** Start HTTP RPC subsystem.
  * Precondition; HTTP and RPC has been started.
  */
-bool StartHTTPRPC(const util::Ref& context);
+bool StartHTTPRPC();
 /** Interrupt HTTP RPC subsystem.
  */
 void InterruptHTTPRPC();
@@ -24,7 +21,7 @@ void StopHTTPRPC();
 /** Start HTTP REST subsystem.
  * Precondition; HTTP and RPC has been started.
  */
-void StartREST(const util::Ref& context);
+void StartREST();
 /** Interrupt RPC REST subsystem.
  */
 void InterruptREST();

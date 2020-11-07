@@ -22,7 +22,7 @@ public:
     QString getURI();
 
 protected Q_SLOTS:
-    void accept() override;
+    void accept();
 
 private:
     Ui::OpenURIDialog *ui;

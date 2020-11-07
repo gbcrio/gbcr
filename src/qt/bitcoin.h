@@ -10,10 +10,7 @@
 #endif
 
 #include <QApplication>
-#include <assert.h>
 #include <memory>
-
-#include <interfaces/node.h>
 
 class BitcoinGUI;
 class ClientModel;
@@ -21,10 +18,13 @@ class NetworkStyle;
 class OptionsModel;
 class PaymentServer;
 class PlatformStyle;
-class SplashScreen;
 class WalletController;
 class WalletModel;
 
+namespace interfaces {
+class Handler;
+class Node;
+} // namespace interfaces
 
 /** Class encapsulating Bitcoin Core startup and shutdown.
  * Allows running startup and shutdown in a different thread from the UI thread.
@@ -40,7 +40,7 @@ public Q_SLOTS:
     void shutdown();
 
 Q_SIGNALS:
-    void initializeResult(bool success, interfaces::BlockAndHeaderTipInfo tip_info);
+    void initializeResult(bool success);
     void shutdownResult();
     void runawayException(const QString &message);
 
@@ -56,7 +56,7 @@ class BitcoinApplication: public QApplication
 {
     Q_OBJECT
 public:
-    explicit BitcoinApplication();
+    explicit BitcoinApplication(interfaces::Node& node);
     ~BitcoinApplication();
 
 #ifdef ENABLE_WALLET
@@ -90,11 +90,8 @@ public:
     /// Setup platform style
     void setupPlatformStyle();
 
-    interfaces::Node& node() const { assert(m_node); return *m_node; }
-    void setNode(interfaces::Node& node);
-
 public Q_SLOTS:
-    void initializeResult(bool success, interfaces::BlockAndHeaderTipInfo tip_info);
+    void initializeResult(bool success);
     void shutdownResult();
     /// Handle runaway exceptions. Shows a message box with the problem and quits the program.
     void handleRunawayException(const QString &message);
@@ -107,6 +104,7 @@ Q_SIGNALS:
 
 private:
     QThread *coreThread;
+    interfaces::Node& m_node;
     OptionsModel *optionsModel;
     ClientModel *clientModel;
     BitcoinGUI *window;
@@ -118,8 +116,6 @@ private:
     int returnValue;
     const PlatformStyle *platformStyle;
     std::unique_ptr<QWidget> shutdownWindow;
-    SplashScreen* m_splash = nullptr;
-    interfaces::Node* m_node = nullptr;
 
     void startThread();
 };

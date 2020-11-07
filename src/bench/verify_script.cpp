@@ -1,11 +1,12 @@
-// Copyright (c) 2016-2020 The Bitcoin Core developers
+// Copyright (c) 2020 GBCR Developers
+// Copyright (c) 2016-2019 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <bench/bench.h>
 #include <key.h>
 #if defined(HAVE_CONSENSUS_LIB)
-#include <script/bitcoinconsensus.h>
+#include <script/goldbcrconsensus.h>
 #endif
 #include <script/script.h>
 #include <script/standard.h>
@@ -16,11 +17,8 @@
 
 // Microbenchmark for verification of a basic P2WPKH script. Can be easily
 // modified to measure performance of other types of scripts.
-static void VerifyScriptBench(benchmark::Bench& bench)
+static void VerifyScriptBench(benchmark::State& state)
 {
-    const ECCVerifyHandle verify_handle;
-    ECC_Start();
-
     const int flags = SCRIPT_VERIFY_WITNESS | SCRIPT_VERIFY_P2SH;
     const int witnessversion = 0;
 
@@ -34,7 +32,7 @@ static void VerifyScriptBench(benchmark::Bench& bench)
     key.Set(vchKey.begin(), vchKey.end(), false);
     CPubKey pubkey = key.GetPubKey();
     uint160 pubkeyHash;
-    CHash160().Write(pubkey).Finalize(pubkeyHash);
+    CHash160().Write(pubkey.begin(), pubkey.size()).Finalize(pubkeyHash.begin());
 
     // Script.
     CScript scriptPubKey = CScript() << witnessversion << ToByteVector(pubkeyHash);
@@ -49,7 +47,7 @@ static void VerifyScriptBench(benchmark::Bench& bench)
     witness.stack.push_back(ToByteVector(pubkey));
 
     // Benchmark.
-    bench.run([&] {
+    while (state.KeepRunning()) {
         ScriptError err;
         bool success = VerifyScript(
             txSpend.vin[0].scriptSig,
@@ -64,19 +62,17 @@ static void VerifyScriptBench(benchmark::Bench& bench)
 #if defined(HAVE_CONSENSUS_LIB)
         CDataStream stream(SER_NETWORK, PROTOCOL_VERSION);
         stream << txSpend;
-        int csuccess = bitcoinconsensus_verify_script_with_amount(
+        int csuccess = goldbcrconsensus_verify_script_with_amount(
             txCredit.vout[0].scriptPubKey.data(),
             txCredit.vout[0].scriptPubKey.size(),
             txCredit.vout[0].nValue,
             (const unsigned char*)stream.data(), stream.size(), 0, flags, nullptr);
         assert(csuccess == 1);
 #endif
-    });
-    ECC_Stop();
+    }
 }
 
-static void VerifyNestedIfScript(benchmark::Bench& bench)
-{
+static void VerifyNestedIfScript(benchmark::State& state) {
     std::vector<std::vector<unsigned char>> stack;
     CScript script;
     for (int i = 0; i < 100; ++i) {
@@ -88,13 +84,15 @@ static void VerifyNestedIfScript(benchmark::Bench& bench)
     for (int i = 0; i < 100; ++i) {
         script << OP_ENDIF;
     }
-    bench.run([&] {
+    while (state.KeepRunning()) {
         auto stack_copy = stack;
         ScriptError error;
         bool ret = EvalScript(stack_copy, script, 0, BaseSignatureChecker(), SigVersion::BASE, &error);
         assert(ret);
-    });
+    }
 }
 
-BENCHMARK(VerifyScriptBench);
-BENCHMARK(VerifyNestedIfScript);
+
+BENCHMARK(VerifyScriptBench, 6300);
+
+BENCHMARK(VerifyNestedIfScript, 100);

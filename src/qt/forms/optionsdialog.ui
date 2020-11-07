@@ -28,7 +28,7 @@
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_Main">
        <item>
-        <widget class="QCheckBox" name="bitcoinAtStartup">
+        <widget class="QCheckBox" name="goldbcrAtStartup">
          <property name="toolTip">
           <string>Automatically start %1 after logging in to the system.</string>
          </property>
@@ -196,7 +196,7 @@
           </widget>
          </item>
          <item>
-          <widget class="BitcoinAmountField" name="reserveBalance">
+          <widget class="GoldBCRAmountField" name="reserveBalance">
            <property name="toolTip">
             <string>Reserve amount that will not be used for staking</string>
            </property>
@@ -289,7 +289,7 @@
        <item>
         <widget class="QCheckBox" name="mapPortUpnp">
          <property name="toolTip">
-          <string>Automatically open the Bitcoin client port on the router. This only works when your router supports UPnP and it is enabled.</string>
+          <string>Automatically open the Gold BCR client port on the router. This only works when your router supports UPnP and it is enabled.</string>
          </property>
          <property name="text">
           <string>Map port using &amp;UPnP</string>
@@ -309,7 +309,7 @@
        <item>
         <widget class="QCheckBox" name="connectSocks">
          <property name="toolTip">
-          <string>Connect to the Bitcoin network through a SOCKS5 proxy.</string>
+          <string>Connect to the Gold BCR network through a SOCKS5 proxy.</string>
          </property>
          <property name="text">
           <string>&amp;Connect through SOCKS5 proxy (default proxy):</string>
@@ -496,10 +496,10 @@
        <item>
         <widget class="QCheckBox" name="connectSocksTor">
          <property name="toolTip">
-          <string>Connect to the Bitcoin network through a separate SOCKS5 proxy for Tor onion services.</string>
+          <string>Connect to the Gold BCR network through a separate SOCKS5 proxy for Tor hidden services.</string>
          </property>
          <property name="text">
-          <string>Use separate SOCKS&amp;5 proxy to reach peers via Tor onion services:</string>
+          <string>Use separate SOCKS&amp;5 proxy to reach peers via Tor hidden services:</string>
          </property>
         </widget>
        </item>
@@ -797,7 +797,7 @@
      <item>
       <layout class="QVBoxLayout" name="verticalLayout_Buttons">
        <item>
-        <widget class="QPushButton" name="openBitcoinConfButton">
+        <widget class="QPushButton" name="openGoldBCRConfButton">
          <property name="toolTip">
           <string>Open the %1 configuration file from the working directory.</string>
          </property>
@@ -935,9 +935,9 @@
    <header>qt/qvaluecombobox.h</header>
   </customwidget>
   <customwidget>
-   <class>BitcoinAmountField</class>
+   <class>GoldBCRAmountField</class>
    <extends>QSpinBox</extends>
-   <header>qt/bitcoinamountfield.h</header>
+   <header>qt/goldbcramountfield.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

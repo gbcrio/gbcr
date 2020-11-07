@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
+# Copyright (c) 2020 GBCR Developers
 # Copyright (c) 2017-2019 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test the listsinceblock RPC."""
 
-from test_framework.test_framework import BitcoinTestFramework
+from test_framework.test_framework import GoldBCRTestFramework
 from test_framework.messages import BIP125_SEQUENCE_NUMBER
 from test_framework.util import (
     assert_array_result,
@@ -15,7 +16,7 @@ from test_framework.util import (
 
 from decimal import Decimal
 
-class ListSinceBlockTest(BitcoinTestFramework):
+class ListSinceBlockTest(GoldBCRTestFramework):
     def set_test_params(self):
         self.num_nodes = 4
         self.setup_clean_chain = True
@@ -36,7 +37,6 @@ class ListSinceBlockTest(BitcoinTestFramework):
         self.test_double_spend()
         self.test_double_send()
         self.double_spends_filtered()
-        self.test_targetconfirmations()
 
     def test_no_blockhash(self):
         self.log.info("Test no blockhash")
@@ -74,27 +74,6 @@ class ListSinceBlockTest(BitcoinTestFramework):
                                 "invalid-hex")
         assert_raises_rpc_error(-8, "blockhash must be hexadecimal string (not 'Z000000000000000000000000000000000000000000000000000000000000000')", self.nodes[0].listsinceblock,
                                 "Z000000000000000000000000000000000000000000000000000000000000000")
-
-    def test_targetconfirmations(self):
-        '''
-        This tests when the value of target_confirmations exceeds the number of
-        blocks in the main chain. In this case, the genesis block hash should be
-        given for the `lastblock` property. If target_confirmations is < 1, then
-        a -8 invalid parameter error is thrown.
-        '''
-        self.log.info("Test target_confirmations")
-        blockhash, = self.nodes[2].generate(1)
-        blockheight = self.nodes[2].getblockheader(blockhash)['height']
-        self.sync_all()
-
-        assert_equal(
-            self.nodes[0].getblockhash(0),
-            self.nodes[0].listsinceblock(blockhash, blockheight + 1)['lastblock'])
-        assert_equal(
-            self.nodes[0].getblockhash(0),
-            self.nodes[0].listsinceblock(blockhash, blockheight + 1000)['lastblock'])
-        assert_raises_rpc_error(-8, "Invalid parameter",
-            self.nodes[0].listsinceblock, blockhash, 0)
 
     def test_reorg(self):
         '''
@@ -166,8 +145,8 @@ class ListSinceBlockTest(BitcoinTestFramework):
 
         Problematic case:
 
-        1. User 1 receives BPS in tx1 from utxo1 in block aa1.
-        2. User 2 receives BPS in tx2 from utxo1 (same) in block bb1
+        1. User 1 receives GBCR in tx1 from utxo1 in block aa1.
+        2. User 2 receives GBCR in tx2 from utxo1 (same) in block bb1
         3. User 1 sees 2 confirmations at block aa3.
         4. Reorg into bb chain.
         5. User 1 asks `listsinceblock aa3` and does not see that tx1 is now

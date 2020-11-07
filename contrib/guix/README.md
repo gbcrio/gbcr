@@ -1,6 +1,6 @@
-# Bootstrappable Bitcoin Core Builds
+# Bootstrappable Gold BCR Core Builds
 
-This directory contains the files necessary to perform bootstrappable Bitcoin
+This directory contains the files necessary to perform bootstrappable Gold BCR
 Core builds.
 
 [Bootstrappability][b17e] furthers our binary security guarantees by allowing us
@@ -13,8 +13,9 @@ We achieve bootstrappability by using Guix as a functional package manager.
 
 Conservatively, a x86_64 machine with:
 
+- 2 or more logical cores
 - 4GB of free disk space on the partition that /gnu/store will reside in
-- 24GB of free disk space on the partition that the Bitcoin Core git repository
+- 24GB of free disk space on the partition that GBCR git repository
   resides in
 
 > Note: these requirements are slightly less onerous than those of Gitian builds
@@ -84,7 +85,7 @@ export PATH="${HOME}/.config/guix/current/bin${PATH:+:}$PATH"
 
 ### As a Development Environment
 
-For a Bitcoin Core depends development environment, simply invoke
+For a Gold BCR Core depends development environment, simply invoke
 
 ```sh
 guix environment --manifest=contrib/guix/manifest.scm
@@ -95,7 +96,7 @@ a `depends` build injected into your environment.
 
 ### As a Tool for Deterministic Builds
 
-From the top of a clean Bitcoin Core repository:
+From the top of a clean Gold BCR Core repository:
 
 ```sh
 ./contrib/guix/guix-build.sh
@@ -142,11 +143,6 @@ find output/ -type f -print0 | sort -z | xargs -r0 sha256sum
   If non-empty, will pass `V=1` to all `make` invocations, making `make` output
   verbose.
 
-  Note that any given value is ignored. The variable is only checked for
-  emptiness. More concretely, this means that `V=` (setting `V` to the empty
-  string) is interpreted the same way as not setting `V` at all, and that `V=0`
-  has the same effect as `V=1`.
-
 * _**ADDITIONAL_GUIX_ENVIRONMENT_FLAGS**_
 
   Additional flags to be passed to `guix environment`. For a fully-bootstrapped
@@ -192,7 +188,7 @@ This can be overridden for all `guix` invocations by passing the
 overridden on a call-by-call basis by passing the same `--substitute-urls`
 option to client tools such at `guix environment`.
 
-To use dongcarl's substitute server for Bitcoin Core builds after having
+To use dongcarl's substitute server for Gold BCR Core builds after having
 [authorized his signing key](#authorize-the-signing-keys):
 
 ```
@@ -224,6 +220,8 @@ repository and will likely put one up soon.
 [guix/env-setup]: https://www.gnu.org/software/guix/manual/en/html_node/Build-Environment-Setup.html
 [guix/substitutes]: https://www.gnu.org/software/guix/manual/en/html_node/Substitutes.html
 [guix/substitute-server-auth]: https://www.gnu.org/software/guix/manual/en/html_node/Substitute-Server-Authorization.html
+[guix/inferiors]: https://www.gnu.org/software/guix/manual/en/html_node/Inferiors.html
+[guix/channels]: https://www.gnu.org/software/guix/manual/en/html_node/Channels.html
 [guix/time-machine]: https://guix.gnu.org/manual/en/html_node/Invoking-guix-time_002dmachine.html
 
 [debian/guix-package]: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=850644

@@ -7,28 +7,16 @@
 
 #include <txmempool.h>
 
-/** The rbf state of unconfirmed transactions */
 enum class RBFTransactionState {
-    /** Unconfirmed tx that does not signal rbf and is not in the mempool */
     UNKNOWN,
-    /** Either this tx or a mempool ancestor signals rbf */
     REPLACEABLE_BIP125,
-    /** Neither this tx nor a mempool ancestor signals rbf */
-    FINAL,
+    FINAL
 };
 
-/**
- * Determine whether an unconfirmed transaction is signaling opt-in to RBF
- * according to BIP 125
- * This involves checking sequence numbers of the transaction, as well
- * as the sequence numbers of all in-mempool ancestors.
- *
- * @param tx   The unconfirmed transaction
- * @param pool The mempool, which may contain the tx
- *
- * @return     The rbf state
- */
+// Determine whether an in-mempool transaction is signaling opt-in to RBF
+// according to BIP 125
+// This involves checking sequence numbers of the transaction, as well
+// as the sequence numbers of all in-mempool ancestors.
 RBFTransactionState IsRBFOptIn(const CTransaction& tx, const CTxMemPool& pool) EXCLUSIVE_LOCKS_REQUIRED(pool.cs);
-RBFTransactionState IsRBFOptInEmptyMempool(const CTransaction& tx);
 
 #endif // BITCOIN_POLICY_RBF_H

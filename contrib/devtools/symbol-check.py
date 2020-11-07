@@ -57,7 +57,7 @@ OTOOL_CMD = os.getenv('OTOOL', '/usr/bin/otool')
 
 # Allowed NEEDED libraries
 ELF_ALLOWED_LIBRARIES = {
-# bitcoind and bitcoin-qt
+# goldbcrd and goldbcr-qt
 'libgcc_s.so.1', # GCC base support
 'libc.so.6', # C library
 'libpthread.so.0', # threading
@@ -69,7 +69,7 @@ ELF_ALLOWED_LIBRARIES = {
 'ld-linux-aarch64.so.1', # 64-bit ARM dynamic linker
 'ld-linux-armhf.so.3', # 32-bit ARM dynamic linker
 'ld-linux-riscv64-lp64d.so.1', # 64-bit RISC-V dynamic linker
-# bitcoin-qt only
+# goldbcr-qt only
 'libxcb.so.1', # part of X11
 'libfontconfig.so.1', # font support
 'libfreetype.so.6', # font parsing
@@ -84,10 +84,10 @@ ARCH_MIN_GLIBC_VER = {
 }
 
 MACHO_ALLOWED_LIBRARIES = {
-# bitcoind and bitcoin-qt
+# goldbcrd and goldbcr-qt
 'libc++.1.dylib', # C++ Standard Library
 'libSystem.B.dylib', # libc, libm, libpthread, libinfo
-# bitcoin-qt only
+# goldbcr-qt only
 'AppKit', # user interface
 'ApplicationServices', # common application tasks.
 'Carbon', # deprecated c back-compat API
@@ -109,7 +109,7 @@ PE_ALLOWED_LIBRARIES = {
 'SHELL32.dll', # shell API
 'USER32.dll', # user interface
 'WS2_32.dll', # sockets
-# bitcoin-qt only
+# goldbcr-qt only
 'dwmapi.dll', # desktop window manager
 'GDI32.dll', # graphics device interface
 'IMM32.dll', # input method editor
@@ -253,7 +253,7 @@ def pe_read_libraries(filename) -> List[str]:
 def check_PE_libraries(filename) -> bool:
     ok = True
     for dylib in pe_read_libraries(filename):
-        if dylib not in PE_ALLOWED_LIBRARIES:
+        if dylib.upper() not in map(str.upper, PE_ALLOWED_LIBRARIES):
             print('{} is not in ALLOWED_LIBRARIES!'.format(dylib))
             ok = False
     return ok

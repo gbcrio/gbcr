@@ -1,4 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
+// Copyright (c) 2020 GBCR Developers
 // Copyright (c) 2009-2019 The Bitcoin Core developers
 // Copyright (c) 2017 The Zcash developers
 // Distributed under the MIT software license, see the accompanying
@@ -146,9 +147,6 @@ public:
         unsigned int len = ::ReadCompactSize(s);
         if (len <= SIZE) {
             s.read((char*)vch, len);
-            if (len != size()) {
-                Invalidate();
-            }
         } else {
             // invalid pubkey, skip available data
             char dummy;
@@ -161,13 +159,13 @@ public:
     //! Get the KeyID of this public key (hash of its serialization)
     CKeyID GetID() const
     {
-        return CKeyID(Hash160(MakeSpan(vch).first(size())));
+        return CKeyID(Hash160(vch, vch + size()));
     }
 
     //! Get the 256-bit hash of this public key.
     uint256 GetHash() const
     {
-        return Hash(MakeSpan(vch).first(size()));
+        return Hash(vch, vch + size());
     }
 
     /*
@@ -227,11 +225,6 @@ struct CExtPubKey {
             a.nChild == b.nChild &&
             a.chaincode == b.chaincode &&
             a.pubkey == b.pubkey;
-    }
-
-    friend bool operator!=(const CExtPubKey &a, const CExtPubKey &b)
-    {
-        return !(a == b);
     }
 
     void Encode(unsigned char code[BIP32_EXTKEY_SIZE]) const;

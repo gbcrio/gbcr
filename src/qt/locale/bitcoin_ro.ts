@@ -802,11 +802,7 @@
         <source>Disable Private Keys</source>
         <translation>Dezactivează cheile private</translation>
     </message>
-    <message>
-        <source>Create</source>
-        <translation>Creează</translation>
-    </message>
-</context>
+    </context>
 <context>
     <name>EditAddressDialog</name>
     <message>
@@ -2209,10 +2205,6 @@ Nota: Cum taxa este calculata per byte, o taxa de "100 satoshi per kB" pentru o 
         <translation>%1(%2 blocuri)</translation>
     </message>
     <message>
-        <source> from wallet '%1'</source>
-        <translation>din portofelul '%1'</translation>
-    </message>
-    <message>
         <source>%1 to %2</source>
         <translation>%1 la %2</translation>
     </message>
@@ -2674,10 +2666,6 @@ Nota: Cum taxa este calculata per byte, o taxa de "100 satoshi per kB" pentru o 
     <message>
         <source>Output index</source>
         <translation>Index debit</translation>
-    </message>
-    <message>
-        <source> (Certificate was not verified)</source>
-        <translation>(Certificatul nu a fost verificat)</translation>
     </message>
     <message>
         <source>Merchant</source>

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Copyright (c) 2017-2020 GBCR Developers
 # Copyright (c) 2017-2020 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -6,21 +7,20 @@
 
 import os
 
-from test_framework.test_framework import BitcoinTestFramework
+from test_framework.test_framework import GoldBCRTestFramework
 
 
-class ConfArgsTest(BitcoinTestFramework):
+class ConfArgsTest(GoldBCRTestFramework):
     def set_test_params(self):
         self.setup_clean_chain = True
         self.num_nodes = 1
         self.supports_cli = False
-        self.wallet_names = []
 
     def test_config_file_parser(self):
         # Assume node is stopped
 
         inc_conf_file_path = os.path.join(self.nodes[0].datadir, 'include.conf')
-        with open(os.path.join(self.nodes[0].datadir, 'bitcoin.conf'), 'a', encoding='utf-8') as conf:
+        with open(os.path.join(self.nodes[0].datadir, 'goldbcr.conf'), 'a', encoding='utf-8') as conf:
             conf.write('includeconf={}\n'.format(inc_conf_file_path))
 
         self.nodes[0].assert_start_raises_init_error(
@@ -64,7 +64,7 @@ class ConfArgsTest(BitcoinTestFramework):
         self.nodes[0].assert_start_raises_init_error(expected_msg='Error: Error reading configuration file: parse error on line 4, using # in rpcpassword can be ambiguous and should be avoided')
 
         inc_conf_file2_path = os.path.join(self.nodes[0].datadir, 'include2.conf')
-        with open(os.path.join(self.nodes[0].datadir, 'bitcoin.conf'), 'a', encoding='utf-8') as conf:
+        with open(os.path.join(self.nodes[0].datadir, 'goldbcr.conf'), 'a', encoding='utf-8') as conf:
             conf.write('includeconf={}\n'.format(inc_conf_file2_path))
 
         with open(inc_conf_file_path, 'w', encoding='utf-8') as conf:
@@ -72,18 +72,12 @@ class ConfArgsTest(BitcoinTestFramework):
         with open(inc_conf_file2_path, 'w', encoding='utf-8') as conf:
             conf.write('[testnet]\n')
         self.restart_node(0)
-        self.nodes[0].stop_node(expected_stderr='Warning: ' + inc_conf_file_path + ':1 Section [testnot] is not recognized.' + os.linesep + inc_conf_file2_path + ':1 Section [testnet] is not recognized.')
+        self.nodes[0].stop_node(expected_stderr='Warning: ' + inc_conf_file_path + ':1 Section [testnot] is not recognized.' + os.linesep + 'Warning: ' + inc_conf_file2_path + ':1 Section [testnet] is not recognized.')
 
         with open(inc_conf_file_path, 'w', encoding='utf-8') as conf:
             conf.write('')  # clear
         with open(inc_conf_file2_path, 'w', encoding='utf-8') as conf:
             conf.write('')  # clear
-
-    def test_invalid_command_line_options(self):
-        self.nodes[0].assert_start_raises_init_error(
-            expected_msg='Error: No proxy server specified. Use -proxy=<ip> or -proxy=<ip:port>.',
-            extra_args=['-proxy'],
-        )
 
     def test_log_buffer(self):
         with self.nodes[0].assert_debug_log(expected_msgs=['Warning: parsed potentially confusing double-negative -connect=0\n']):
@@ -119,41 +113,13 @@ class ConfArgsTest(BitcoinTestFramework):
             ])
         self.stop_node(0)
 
-    def test_networkactive(self):
-        self.log.info('Test -networkactive option')
-        with self.nodes[0].assert_debug_log(expected_msgs=['SetNetworkActive: true\n']):
-            self.start_node(0)
-        self.stop_node(0)
-
-        with self.nodes[0].assert_debug_log(expected_msgs=['SetNetworkActive: true\n']):
-            self.start_node(0, extra_args=['-networkactive'])
-        self.stop_node(0)
-
-        with self.nodes[0].assert_debug_log(expected_msgs=['SetNetworkActive: true\n']):
-            self.start_node(0, extra_args=['-networkactive=1'])
-        self.stop_node(0)
-
-        with self.nodes[0].assert_debug_log(expected_msgs=['SetNetworkActive: false\n']):
-            self.start_node(0, extra_args=['-networkactive=0'])
-        self.stop_node(0)
-
-        with self.nodes[0].assert_debug_log(expected_msgs=['SetNetworkActive: false\n']):
-            self.start_node(0, extra_args=['-nonetworkactive'])
-        self.stop_node(0)
-
-        with self.nodes[0].assert_debug_log(expected_msgs=['SetNetworkActive: false\n']):
-            self.start_node(0, extra_args=['-nonetworkactive=1'])
-        self.stop_node(0)
-
     def run_test(self):
         self.stop_node(0)
 
         self.test_log_buffer()
         self.test_args_log()
-        self.test_networkactive()
 
         self.test_config_file_parser()
-        self.test_invalid_command_line_options()
 
         # Remove the -datadir argument so it doesn't override the config file
         self.nodes[0].args = [arg for arg in self.nodes[0].args if not arg.startswith("-datadir")]
@@ -167,7 +133,7 @@ class ConfArgsTest(BitcoinTestFramework):
         self.nodes[0].assert_start_raises_init_error(['-datadir=' + new_data_dir], 'Error: Specified data directory "' + new_data_dir + '" does not exist.')
 
         # Check that using non-existent datadir in conf file fails
-        conf_file = os.path.join(default_data_dir, "bitcoin.conf")
+        conf_file = os.path.join(default_data_dir, "goldbcr.conf")
 
         # datadir needs to be set before [chain] section
         conf_file_contents = open(conf_file, encoding='utf8').read()

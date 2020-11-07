@@ -1,3 +1,7 @@
+.idea/**
+
+contrib/macdeploy/**
+
 *.tar.gz
 
 *.exe
@@ -5,11 +9,9 @@
 src/bitcoin
 src/bitcoin-posd
 src/bitcoin-pos-cli
-src/bitcoin-pos-gui
-src/bitcoin-pos-node
 src/bitcoin-pos-tx
 src/bitcoin-pos-wallet
-src/test/fuzz/*
+src/test/fuzz
 !src/test/fuzz/*.*
 src/test/test_bitcoin
 src/qt/test/test_bitcoin-qt
@@ -119,10 +121,7 @@ releases
 /*.info
 test_bitcoin.coverage/
 total.coverage/
-fuzz.coverage/
 coverage_percent.txt
-/cov_tool_wrapper.sh
-qa-assets/
 
 #build tests
 linux-coverage-build
@@ -130,7 +129,6 @@ linux-build
 win32-build
 test/config.ini
 test/cache/*
-test/.mypy_cache/
 
 !src/leveldb*/Makefile
 

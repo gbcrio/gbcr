@@ -1,5 +1,6 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2020 The Bitcoin Core developers
+// Copyright (c) 2020 GBCR Developers
+// Copyright (c) 2009-2019 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -44,17 +45,6 @@ int64_t UpdateTime(CBlockHeader* pblock, const Consensus::Params& consensusParam
         pblock->nBits = GetNextWorkRequired(pindexPrev, pblock, consensusParams, pblock->IsProofOfStake());
 
     return nNewTime - nOldTime;
-}
-
-void RegenerateCommitments(CBlock& block)
-{
-    CMutableTransaction tx{*block.vtx.at(0)};
-    tx.vout.erase(tx.vout.begin() + GetWitnessCommitmentIndex(block));
-    block.vtx.at(0) = MakeTransactionRef(tx);
-
-    GenerateCoinbaseCommitment(block, WITH_LOCK(cs_main, return LookupBlockIndex(block.hashPrevBlock)), Params().GetConsensus());
-
-    block.hashMerkleRoot = BlockMerkleRoot(block);
 }
 
 BlockAssembler::Options::Options() {
@@ -114,7 +104,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
 
     if(!pblocktemplate.get())
         return nullptr;
-    CBlock* const pblock = &pblocktemplate->block; // pointer for convenience
+    pblock = &pblocktemplate->block; // pointer for convenience
 
     // Add dummy coinbase tx as first transaction
     pblock->vtx.emplace_back();
@@ -260,7 +250,7 @@ bool BlockAssembler::TestPackageTransactions(const CTxMemPool::setEntries& packa
 
 void BlockAssembler::AddToBlock(CTxMemPool::txiter iter)
 {
-    pblocktemplate->block.vtx.emplace_back(iter->GetSharedTx());
+    pblock->vtx.emplace_back(iter->GetSharedTx());
     pblocktemplate->vTxFees.push_back(iter->GetFee());
     pblocktemplate->vTxSigOpsCost.push_back(iter->GetSigOpCost());
     nBlockWeight += iter->GetTxWeight();
@@ -498,7 +488,7 @@ void IncrementExtraNonce(CBlock* pblock, const CBlockIndex* pindexPrev, unsigned
 // Looking for suitable coins for creating new block.
 //
 
-bool CheckStake(const std::shared_ptr<const CBlock> pblock, CWallet& wallet, ChainstateManager* chainman)
+bool CheckStake(const std::shared_ptr<const CBlock> pblock, CWallet& wallet)
 {
     uint256 proofHash, hashTarget;
     uint256 hashBlock = pblock->GetHash();
@@ -518,6 +508,7 @@ bool CheckStake(const std::shared_ptr<const CBlock> pblock, CWallet& wallet, Cha
 
     // Found a solution
     {
+        auto locked_chain = wallet.chain().lock();
         if (pblock->hashPrevBlock != ::ChainActive().Tip()->GetBlockHash())
             return error("CheckStake() : generated block is stale");
 
@@ -530,18 +521,18 @@ bool CheckStake(const std::shared_ptr<const CBlock> pblock, CWallet& wallet, Cha
 
     // Process this block the same as if we had received it from another node
     bool fNewBlock = false;
-    if (!chainman->ProcessNewBlock(Params(), pblock, true, &fNewBlock))
+    if (!ProcessNewBlock(Params(), pblock, true, &fNewBlock))
         return error("CheckStake() : ProcessBlock, block not accepted");
 
     return true;
 }
 
-void ThreadStakeMiner(CWallet *pwallet, CConnman* connman, ChainstateManager* chainman, CTxMemPool* mempool)
+void ThreadStakeMiner(CWallet *pwallet, CConnman* connman, CTxMemPool* mempool)
 {
     SetThreadPriority(THREAD_PRIORITY_LOWEST);
 
     // Make this thread recognisable as the mining thread
-    std::string threadName = "bpsstake";
+    std::string threadName = "GBCRstake";
     if (pwallet && pwallet->GetName() != "")
     {
         threadName = threadName + "-" + pwallet->GetName();
@@ -566,7 +557,7 @@ void ThreadStakeMiner(CWallet *pwallet, CConnman* connman, ChainstateManager* ch
         }
         // Check if the last PoW block has been mined yet
         if (::ChainActive().Tip()->nHeight < Params().GetConsensus().nLastPOWBlock) {
-            UninterruptibleSleep(std::chrono::milliseconds{Params().GetConsensus().nPowTargetSpacing * 1000});// sleep one block
+            UninterruptibleSleep(std::chrono::milliseconds{Params().GetConsensus().nPowTargetSpacing * 1000});
             continue;
         }
         // Don't disable PoS mining for no connections if in regtest mode
@@ -582,7 +573,7 @@ void ThreadStakeMiner(CWallet *pwallet, CConnman* connman, ChainstateManager* ch
                     ::ChainActive().Tip()->GetBlockTime() < GetTime() - Params().GetConsensus().nPowTargetSpacing ||
                     !::ChainActive().Tip()->HaveTxsDownloaded() ||
                     !::ChainActive().Tip()->IsValid(BLOCK_VALID_TRANSACTIONS)) {
-                    UninterruptibleSleep(std::chrono::milliseconds{Params().GetConsensus().nPowTargetSpacing / 10 * 1000});
+                    UninterruptibleSleep(std::chrono::milliseconds{Params().GetConsensus().nPowTargetSpacing / 10 * 100});
                     continue;
                 }
             }
@@ -597,15 +588,17 @@ void ThreadStakeMiner(CWallet *pwallet, CConnman* connman, ChainstateManager* ch
         if (chainTipForCoins != ::ChainActive().Tip()->GetBlockHash()) {
             int64_t start_time = GetTimeMillis();
             LogPrint(BCLog::COINSTAKE, "Chain tip changed since previous coin selection, selecting new coins for staking...\n");
+            auto locked_chain = pwallet->chain().lock();
             LOCK(pwallet->cs_wallet);
             setCoins.clear();
             chainTipForCoins = ::ChainActive().Tip()->GetBlockHash();
-            pwallet->SelectCoinsForStaking(nTargetValue, setCoins, nValueIn);
+            pwallet->SelectCoinsForStaking(*locked_chain, nTargetValue, setCoins, nValueIn);
             LogPrint(BCLog::COINSTAKE, "Selecting coins for staking completed in %15dms\n", GetTimeMillis() - start_time);
         } else {
             LogPrint(BCLog::COINSTAKE, "Chain tip unchanged since previous coin selection, using previously selected coins...\n");
-        }
+        }        
 
+        // Enable minimum
         if (setCoins.size() > 0)
         {
             int64_t nTotalFees = 0;
@@ -683,7 +676,7 @@ void ThreadStakeMiner(CWallet *pwallet, CConnman* connman, ChainstateManager* ch
                             validBlock=true;
                         }
                         if (validBlock) {
-                            CheckStake(pblockfilled, *pwallet, chainman);
+                            CheckStake(pblockfilled, *pwallet);
                             // Update the search time when new valid block is created, needed for status bar icon
                             pwallet->m_last_coin_stake_search_time = pblockfilled->GetBlockTime();
                         }
@@ -698,7 +691,7 @@ void ThreadStakeMiner(CWallet *pwallet, CConnman* connman, ChainstateManager* ch
     }
 }
 
-void StakeBPSs(bool fStake, CWallet *pwallet, CConnman* connman, ChainstateManager* chainman, CTxMemPool* mempool, boost::thread_group*& stakeThread)
+void StakeGBCRs(bool fStake, CWallet *pwallet, CConnman* connman, CTxMemPool* mempool, boost::thread_group*& stakeThread)
 {
     if (stakeThread != nullptr)
     {
@@ -710,7 +703,7 @@ void StakeBPSs(bool fStake, CWallet *pwallet, CConnman* connman, ChainstateManag
     if(fStake)
     {
         stakeThread = new boost::thread_group();
-        stakeThread->create_thread(boost::bind(&ThreadStakeMiner, pwallet, connman, chainman, mempool));
+        stakeThread->create_thread(boost::bind(&ThreadStakeMiner, pwallet, connman, mempool));
     }
 }
 #endif

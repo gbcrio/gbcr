@@ -1,10 +1,11 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
+// Copyright (c) 2020 GBCR Developers
 // Copyright (c) 2009-2018 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_POS_H
-#define BITCOIN_POS_H
+#ifndef gold_bcr_H
+#define gold_bcr_H
 
 #include <chain.h>
 #include <primitives/transaction.h>
@@ -74,4 +75,4 @@ bool GetMPoSOutputScripts(std::vector<CScript> &mposScroptList, int nHeight, con
 
 bool CreateMPoSOutputs(CMutableTransaction& txNew, int64_t nRewardPiece, int nHeight, const Consensus::Params& consensusParams);
 
-#endif // BITCOIN_POS_H
+#endif // gold_bcr_H
